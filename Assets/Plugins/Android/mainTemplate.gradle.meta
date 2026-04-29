@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: be7230437d7c15e4dbbecc4ed9a816f7
+DefaultImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 282386
+  packageName: Carrom - Multiplayer
+  packageVersion: 1.2
+  assetPath: Assets/Plugins/Android/mainTemplate.gradle
+  uploadId: 738807

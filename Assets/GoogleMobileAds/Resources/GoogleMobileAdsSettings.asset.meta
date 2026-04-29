@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 371309549add8f94ab6f03ff3138b0a4
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 282386
+  packageName: Carrom - Multiplayer
+  packageVersion: 1.2
+  assetPath: Assets/GoogleMobileAds/Resources/GoogleMobileAdsSettings.asset
+  uploadId: 738807

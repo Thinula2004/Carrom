@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 5a66be1bb3250864e928da15a470f10e
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 282386
+  packageName: Carrom - Multiplayer
+  packageVersion: 1.2
+  assetPath: Assets/Carrom/Frameworks/Photon/PhotonUnityNetworking/Resources/PhotonServerSettings.asset
+  uploadId: 738807
