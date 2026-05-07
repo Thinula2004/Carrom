@@ -93,8 +93,13 @@ namespace BEKStudio
 
         public List<Sprite> demoProfiles1;
         public List<Sprite> demoProfiles2;
-        public string user_token;
 
+        public GameObject friendsPanel;
+        public TMP_Text friendCodeTxt;
+        public string tempFriendCode;
+        public TMP_Text friendAmountTxt;
+
+        public string user_token;
 
          #if UNITY_WEBGL && !UNITY_EDITOR
         [DllImport("__Internal")]
@@ -150,6 +155,9 @@ namespace BEKStudio
         
        void Start()
         {
+            friendsPanel.SetActive(false);
+            tempFriendCode = null;
+            friendCodeTxt.text = "";
             versionIssuePanel.SetActive(false);
             versionTxt.text = VersionChecker.GetVersion();
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
@@ -222,6 +230,72 @@ namespace BEKStudio
         public void ReloadScene()
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
+
+        public void OpenFriendsPanel(int roomPrice)
+        {
+            
+            string msg = "Your account balance is low!\r\nPlease top up your account\r\nto continue playing";
+            int coinBal = UMdata.total_coins;
+
+            if (coinBal <= roomPrice)
+            {
+                CheckCoinBalance(msg);
+                return;
+            }
+            tempFriendCode = "";
+            for (int i = 0; i < 6; i++)
+            {
+                tempFriendCode += (char)UnityEngine.Random.Range('A', 'Z' + 1);
+            }
+
+            friendCodeTxt.text = tempFriendCode;
+            friendsPanel.SetActive(true); 
+        }
+
+        public void ChangeBetAmount(bool increase)
+        {
+            int[] levels = { 100, 200, 500, 1000, 5000 };
+
+            string text = friendAmountTxt.text;
+            string amountOnly = text.Replace(" LKR", "").Trim();
+
+            if (!int.TryParse(amountOnly, out int currentAmount))
+            {
+                Debug.LogWarning("Invalid amount text: " + text);
+                return;
+            }
+
+            int currentIndex = System.Array.IndexOf(levels, currentAmount);
+
+            if (currentIndex == -1)
+            {
+                Debug.LogWarning("Amount is not in level list: " + currentAmount);
+                return;
+            }
+
+            int newIndex = increase ? currentIndex + 1 : currentIndex - 1;
+
+            if (newIndex < 0 || newIndex >= levels.Length)
+            {
+                return;
+            }
+
+            friendAmountTxt.text = levels[newIndex] + " LKR";
+        }
+
+        public void CopyFriendCode()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            WebBrowserBridge.Instance.CopyText(tempFriendCode);
+#else
+            GUIUtility.systemCopyBuffer = tempFriendCode;
+#endif
+        }
+
+        public void closeFriendsPanel()
+        {
+            friendsPanel.SetActive(false);
         }
 
         private IEnumerator LoadingProcess()
@@ -1043,7 +1117,7 @@ public class UserData
                     StartCoroutine(PostGameStatsCoroutine(room));
                     setupScreens();
                     PhotonController.Instance.roomEntryPice = Constants.ROOM_COLOMBO_ENTRY_PRICE;
-                    PhotonController.Instance.FindRoom();
+                    PhotonController.Instance.GetBotStatus();
                     PlayerPrefs.SetString("roomName", room);
                     VsJoinedRoom();
                 }
@@ -1061,7 +1135,7 @@ public class UserData
                     StartCoroutine(PostGameStatsCoroutine(room));
                     setupScreens();
                     PhotonController.Instance.roomEntryPice = Constants.ROOM_KANDY_ENTRY_PRICE;
-                    PhotonController.Instance.FindRoom();
+                    PhotonController.Instance.GetBotStatus();
                     PlayerPrefs.SetString("roomName", room);
                     VsJoinedRoom();
                 }
@@ -1070,7 +1144,15 @@ public class UserData
                     StartCoroutine(PostGameStatsCoroutine(room));
                     setupScreens();
                     PhotonController.Instance.roomEntryPice = Constants.ROOM_SIGIRI_ENTRY_PRICE;
-                    PhotonController.Instance.FindRoom();
+                    BR_APIManager.BotStateData botData = new BR_APIManager.BotStateData
+                    {
+                        is_bot_activated = false,
+                        is_carrom_bot_activated = false,
+                        current_carrom_sequence = null,
+                        is_fresh_carrom_user = false,
+                        is_fresh_user = false
+                    };
+                    PhotonController.Instance.FindRoom(botData);
                     PlayerPrefs.SetString("roomName", room);
                     VsJoinedRoom();
                 }
@@ -1079,7 +1161,16 @@ public class UserData
                     StartCoroutine(PostGameStatsCoroutine(room));
                     setupScreens();
                     PhotonController.Instance.roomEntryPice = Constants.ROOM_JAFFNA_ENTRY_PRICE;
-                    PhotonController.Instance.FindRoom();
+
+                    BR_APIManager.BotStateData botData = new BR_APIManager.BotStateData
+                    {
+                        is_bot_activated = false,
+                        is_carrom_bot_activated = false,
+                        current_carrom_sequence = null,
+                        is_fresh_carrom_user = false,
+                        is_fresh_user = false
+                    };
+                    PhotonController.Instance.FindRoom(botData);
                     PlayerPrefs.SetString("roomName", room);
                     VsJoinedRoom();
                 }
@@ -1183,8 +1274,10 @@ public class UserData
             AudioManager.Instance.StopRollingSound();
             Debug.Log("No opponent found");
             NoOpponentScreen.SetActive(true);
-            PhotonNetwork.CurrentRoom.IsOpen = false;
-            PhotonNetwork.CurrentRoom.IsVisible = false;
+            if (PhotonNetwork.InRoom){
+                PhotonNetwork.CurrentRoom.IsOpen = false;
+                PhotonNetwork.CurrentRoom.IsVisible = false;
+            }
         }
 
         public void WaitForOpponentBtn()

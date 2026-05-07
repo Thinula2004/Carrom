@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using System.Text;
 using BEKStudio;
+using Newtonsoft.Json;
 
 public class BR_APIManager : MonoBehaviour
 {
@@ -172,8 +173,10 @@ public class BR_APIManager : MonoBehaviour
     public class BotStateData
     {
         public bool is_fresh_user;
+        public bool is_fresh_carrom_user;
         public bool is_bot_activated;
         public bool is_carrom_bot_activated;
+        public bool? current_carrom_sequence;
 
     }
 
@@ -190,7 +193,7 @@ public class BR_APIManager : MonoBehaviour
         public bool is_bot_activated;
         public int MatchCompleted;
         public int allMatchCompleted;
-        public bool current_sequence;
+        public bool? current_sequence;
     }
 
     [System.Serializable]
@@ -462,7 +465,8 @@ public class BR_APIManager : MonoBehaviour
                 bet_amount = betAmount,
                 result = result,
                 round_id = roundId,
-                match_data = "[DEMO] " + botName
+                match_data = "[DEMO] " + botName,
+                current_sequence = PhotonController.Instance.demoPlayer.isFresh ? !PhotonController.Instance.demoPlayer.isWinning : true
             };
 
             json = JsonUtility.ToJson(betRequest);
@@ -595,13 +599,11 @@ public class BR_APIManager : MonoBehaviour
 
         if (request.result == UnityWebRequest.Result.Success)
         {
-            BotStateResponse response = JsonUtility.FromJson<BotStateResponse>(json);
+            BotStateResponse response = JsonConvert.DeserializeObject<BotStateResponse>(json);
             Debug.Log("Bot State Success. Response: " + json);
 
             PhotonController.Instance.FindRoom(
-                response.data.is_bot_activated &&
-                response.data.is_carrom_bot_activated &&
-                !response.data.is_fresh_user
+                response.data
             );
         }
         else
@@ -609,7 +611,15 @@ public class BR_APIManager : MonoBehaviour
             Debug.LogError("Bot State Failed: " + request.error);
             Debug.LogError("Message: " + json);
             Debug.LogError("Status Code: " + request.responseCode);
-            PhotonController.Instance.FindRoom(false);
+            BR_APIManager.BotStateData botData = new BR_APIManager.BotStateData
+            {
+                is_bot_activated = false,
+                is_carrom_bot_activated = false,
+                current_carrom_sequence = null,
+                is_fresh_carrom_user = false,
+                is_fresh_user = false
+            };
+            PhotonController.Instance.FindRoom(botData);
         }
     }
 

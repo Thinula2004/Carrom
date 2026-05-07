@@ -14,6 +14,7 @@ namespace BEKStudio
         public string name { get; set; } = "Bot";
         public Sprite profilePic { get; set; }
         public bool isWinning = true;
+        public bool isFresh = false;
     }
 
     public class PhotonController : MonoBehaviourPunCallbacks
@@ -164,8 +165,9 @@ namespace BEKStudio
             BR_APIManager.Instance.GetBotState();
         }
 
-        public void FindRoom(bool isBotActivated = false)
+        public void FindRoom(BR_APIManager.BotStateData response)
         {
+            bool isBotActivated = response.is_carrom_bot_activated;
 
             matchmakingResolved = false;
             isCreatingRoom = false;
@@ -173,10 +175,44 @@ namespace BEKStudio
             intentionallyLeft = false;
             MenuController.Instance.vsMsgText.text = "Searching room...";
 
+
+            if (response.is_fresh_carrom_user)
+            {
+                if(whichRoom == "galle")
+                {    
+                    if(response.current_carrom_sequence != null)
+                    {
+                        bool value = response.current_carrom_sequence ?? false;
+                        MenuController.Instance.VsJoinedRoom();
+                        StartCoroutine(FreshUserOfflineMatchCoroutine(value));
+                    }
+                }
+                return;
+            }
+
+            MenuController.Instance.VsJoinedRoom();
+            if (isBotActivated)
+            {
+                StartCoroutine(FreshUserOfflineMatchCoroutine(false));
+                return;
+            }
+
+
+            Debug.Log("N: 1");
+
+            // if(MenuController.Instance.UMdata != null && MenuController.Instance.UMdata.player_rank == "diamond")
+            // {
+            //     MenuController.Instance.VsJoinedRoom();
+            //     if (isBotActivated)
+            //     {
+            //         StartCoroutine(FreshUserOfflineMatchCoroutine(false));
+            //     }
+            //     return;
+            // }
+
             string playerRank = "bronze"; 
             if (MenuController.Instance.UMdata != null && !string.IsNullOrEmpty(MenuController.Instance.UMdata.player_rank))
             {
-
                 if (MenuController.Instance.UMdata.player_rank == "bronze" || MenuController.Instance.UMdata.player_rank == "silver" || MenuController.Instance.UMdata.player_rank == "gold")
                 {
                     playerRank = "bronze";
@@ -190,10 +226,10 @@ namespace BEKStudio
             }
 
             ExitGames.Client.Photon.Hashtable roomHastable = new ExitGames.Client.Photon.Hashtable {
-            { "gameId", GAME_ID },
-            { "roomType", whichRoom },
-            { "playerRank", playerRank }
-        };
+                { "gameId", GAME_ID },
+                { "roomType", whichRoom }
+                // { "playerRank", playerRank }
+            };
             MenuController.Instance.VsJoinedRoom();
             Debug.Log("PR " + playerRank);
             PhotonNetwork.JoinRandomRoom(roomHastable, (byte)2);
@@ -229,6 +265,33 @@ namespace BEKStudio
             {
                 name = demoSprite.name,
                 profilePic = demoSprite
+            };
+
+            if (PhotonNetwork.InRoom)
+            {
+                PhotonNetwork.LeaveRoom();
+            }
+
+            StartCoroutine(MenuController.Instance.BotJoinedRoomCoroutine());
+        }
+
+        IEnumerator FreshUserOfflineMatchCoroutine(bool currentSequence)
+        {
+            Debug.Log($"N: Fresh User Offline Coroutine Started. Sequence {currentSequence}");
+            yield return new WaitForSeconds(Random.Range(3f, 10f));
+
+            if(MenuController.Instance.noOpponentFound != null)
+            {
+                StopCoroutine(MenuController.Instance.noOpponentFound);
+            }
+            offlineMatch = true;
+            Sprite demoSprite = MenuController.Instance.GetRandomDemoProfile();
+            demoPlayer = new DemoPlayer
+            {
+                name = demoSprite.name,
+                profilePic = demoSprite,
+                isWinning = !currentSequence,
+                isFresh = true
             };
 
             if (PhotonNetwork.InRoom)
@@ -335,7 +398,15 @@ namespace BEKStudio
                 Debug.LogWarning($"Joined room over capacity ({PhotonNetwork.CurrentRoom.PlayerCount}/{PhotonNetwork.CurrentRoom.MaxPlayers}). Leaving and searching again.");
                 PhotonNetwork.LeaveRoom();
                 MenuController.Instance.vsMsgText.text = "Room full, searching again...";
-                FindRoom();
+                BR_APIManager.BotStateData botData = new BR_APIManager.BotStateData
+                {
+                    is_bot_activated = false,
+                    is_carrom_bot_activated = false,
+                    current_carrom_sequence = null,
+                    is_fresh_carrom_user = false,
+                    is_fresh_user = false
+                };
+                FindRoom(botData);
                 return;
             }
 
