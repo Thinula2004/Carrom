@@ -3072,7 +3072,7 @@ namespace BEKStudio
 
         void CheckInternet()
         {
-            StartCoroutine(CheckInternetCoroutine());
+            // StartCoroutine(CheckInternetCoroutine());
         }
 
         IEnumerator CheckInternetCoroutine()
