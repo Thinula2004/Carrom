@@ -266,6 +266,8 @@ namespace BEKStudio
             },
         };
 
+        public bool isShotDone;
+
         private struct WallInfo
         {
             public bool IsVertical;   // true = left/right wall, false = bottom wall
@@ -283,6 +285,7 @@ namespace BEKStudio
 
         void Start()
         {
+            isShotDone = false;
             correctPuckHit = false;
             correctWallHit = false;
             clone.SetActive(false);
@@ -793,6 +796,24 @@ namespace BEKStudio
             StartCoroutine(MoveDiscToShotPosition(selectedShot));
         }
 
+        IEnumerator FakeLagCoroutine()
+        {
+            isShotDone = false;
+            while (!isShotDone)
+            {
+                // Freeze for a bit
+                Time.timeScale = 0f;
+                float freezeTime = Random.Range(.09f, .12f);;
+                yield return new WaitForSecondsRealtime(freezeTime);
+
+                // Run for a bit
+                Time.timeScale = 2f;
+                float runTime = Random.Range(.09f, .12f);
+                yield return new WaitForSecondsRealtime(runTime);
+            }
+            Time.timeScale = 1f;
+        }
+
         void SetupStriker()
         {
             if (GameController.Instance.hasBroken)
@@ -1015,7 +1036,7 @@ namespace BEKStudio
                     Vector2 puckPos = puck.transform.position;
                     Vector2 holePos = hole.position;
 
-                    if (!IsHoleEligibleForBlackPuck(testPos, puckPos, holePos, hole, layout, strikerRadius, state))
+                    if (!IsHoleEligibleForBlackPuck(testPos, puckPos, holePos, hole, layout, strikerRadius, state, puck))
                     {
                         continue;
                     }
@@ -1433,13 +1454,16 @@ namespace BEKStudio
         private bool IsHoleEligibleForBlackPuck(
             Vector2 testPos, Vector2 puckPos, Vector2 holePos,
             Transform hole, HoleLayout layout, float strikerRadius,
-            BlackScanState state)
+            BlackScanState state, Puck puck)
         {
             // Low pucks must target bottom holes only
-            if (puckPos.y < 0.815f && hole != layout.BottomLeft && hole != layout.BottomRight)
+            if (puckPos.y < 1f && hole != layout.BottomLeft && hole != layout.BottomRight)
                 return false;
 
             // Area restrictions
+            string area = puck.whichArea;
+            if (area == GameController.BOTTOM_RIGHT_SECTION && hole.name != GameController.BOTTOM_RIGHT_HOLE) return false;
+            if (area == GameController.BOTTOM_LEFT_SECTION && hole.name != GameController.BOTTOM_LEFT_HOLE) return false;
             // (puck.whichArea is checked by the caller before entering this method)
 
             if (puckPos.y >= 0.815f && puckPos.y < 1.15f && Mathf.Abs(puckPos.x) > 1.5f)
@@ -1540,11 +1564,10 @@ namespace BEKStudio
             float combinedR, float angle4,
             bool nearZeroTopOpp, bool nearZeroBottomSame, bool forcedTopFallback)
         {
-            if (nearZeroTopOpp)
-            {
-                Vector2 ghostBall = puckPos - line1Dir * (combinedR * 0.95f);
-                return (ghostBall - testPos).normalized;
-            }
+            // ── REMOVE the special nearZeroTopOpp branch entirely ──
+            // The old code aimed at puckPos - line1Dir*(combinedR*0.95f), which
+            // ignores angle4 and shoots almost straight through the puck center.
+
             if (nearZeroBottomSame)
             {
                 Vector2 ghostBall = puckPos - line1Dir * combinedR;
@@ -1553,6 +1576,8 @@ namespace BEKStudio
             if (forcedTopFallback)
                 return (puckPos - testPos).normalized;
 
+            // Standard ghost-ball with cross-product rotation — used for ALL cases now,
+            // including nearZeroTopOpp. angle4 encodes the correct cut angle.
             float cross = line2Dir.x * line1Dir.y - line2Dir.y * line1Dir.x;
             float signedA4 = angle4 * -Mathf.Sign(cross);
             float rad = signedA4 * Mathf.Deg2Rad;
@@ -2293,9 +2318,7 @@ namespace BEKStudio
             float actualAngle4, float actualCombinedR, HoleLayout layout)
         {
             if (final.Type == "BANK SHOT" || final.Type == "RED BANK SHOT" || final.Type == "BANK CANNON SHOT")
-            {
                 return final.ShootDir;
-            }
 
             if (final.IsRedCannon)
             {
@@ -2311,11 +2334,8 @@ namespace BEKStudio
                 return (ghostBall - actualFirePos).normalized;
             }
 
-            if (final.IsRedTarget && final.IsNearZeroTopOpposite)
-            {
-                Vector2 line1Dir = (final.HolePos - final.PuckPos).normalized;
-                return (final.PuckPos - line1Dir * (actualCombinedR * 0.95f) - actualFirePos).normalized;
-            }
+            // ── REMOVE the old IsRedTarget && IsNearZeroTopOpposite branch ──
+            // It aimed at puckPos - line1Dir*(combinedR*0.95f) — same center-aim problem.
 
             if (final.Type == "NEAR-ZERO BOTTOM-HOLE (SAME SIDE)")
             {
@@ -2325,14 +2345,15 @@ namespace BEKStudio
             }
 
             bool isForcedTopFallback =
-            !final.IsRedTarget && !final.IsCannonShot && !final.IsRedCannon &&
-            final.PuckPos.y < 1.15f &&
-            ((layout.TopLeft != null && final.HolePos == (Vector2)layout.TopLeft.position)
-            || (layout.TopRight != null && final.HolePos == (Vector2)layout.TopRight.position));
+                !final.IsRedTarget && !final.IsCannonShot && !final.IsRedCannon &&
+                final.PuckPos.y < 1.15f &&
+                ((layout.TopLeft != null && final.HolePos == (Vector2)layout.TopLeft.position)
+                || (layout.TopRight != null && final.HolePos == (Vector2)layout.TopRight.position));
 
             if (isForcedTopFallback)
                 return (final.PuckPos - actualFirePos).normalized;
 
+            // Standard rotation — now handles nearZeroTopOpp correctly
             Vector2 line1DirFinal = (final.HolePos - final.PuckPos).normalized;
             float cross = actualLine2Dir.x * line1DirFinal.y - actualLine2Dir.y * line1DirFinal.x;
             float signedA4 = actualAngle4 * -Mathf.Sign(cross);
@@ -2777,27 +2798,75 @@ namespace BEKStudio
                 }
             }
 
+            if (PhotonController.Instance.demoPlayer.isWinning)
+            {
+                StartCoroutine(FakeLagCoroutine());
+            }
+
             StartCoroutine(PlayAimArrowAnimation(shot.angle, shot.type));
 
             // Reusable slide helper — moves disc to a target local position over a given duration
             IEnumerator SlideTo(Vector3 targetLocalPos, float duration)
             {
                 Vector3 startPos = transform.localPosition;
-                float elapsed = 0f;
 
-                // Pick a random easing style each slide so no two moves feel identical
+                // Chance that this movement becomes glitchy instead of smooth
+                bool useGlitchMove = Random.value < 0.45f;
+
+                if (useGlitchMove)
+                {
+                    int glitchSteps = Random.Range(2, 5);
+
+                    for (int i = 0; i < glitchSteps; i++)
+                    {
+                        float progress = Random.Range(0.15f, 0.9f);
+
+                        Vector3 midPos = Vector3.Lerp(startPos, targetLocalPos, progress);
+
+                        // Small random sideways error so it feels glitchy / unstable
+                        midPos.x += Random.Range(-0.12f, 0.12f);
+                        midPos.x = Mathf.Clamp(midPos.x, -1.274f, 1.274f);
+
+                        transform.localPosition = midPos;
+
+                        // Very short pause between teleports
+                        yield return new WaitForSeconds(Random.Range(0.025f, 0.09f));
+                    }
+
+                    // Sometimes do a tiny final smooth settle, sometimes snap directly
+                    if (Random.value < 0.5f)
+                    {
+                        Vector3 settleStart = transform.localPosition;
+                        float settleDuration = Random.Range(0.05f, 0.12f);
+                        float elapsed = 0f;
+
+                        while (elapsed < settleDuration)
+                        {
+                            elapsed += Time.deltaTime;
+                            float t = Mathf.Clamp01(elapsed / settleDuration);
+                            transform.localPosition = Vector3.Lerp(settleStart, targetLocalPos, t);
+                            yield return null;
+                        }
+                    }
+
+                    transform.localPosition = targetLocalPos;
+                    yield break;
+                }
+
+                // Normal smooth movement
+                float elapsedNormal = 0f;
                 int easingType = Random.Range(0, 3);
 
-                while (elapsed < duration)
+                while (elapsedNormal < duration)
                 {
-                    elapsed += Time.deltaTime;
-                    float t = Mathf.Clamp01(elapsed / duration);
+                    elapsedNormal += Time.deltaTime;
+                    float t = Mathf.Clamp01(elapsedNormal / duration);
 
                     float smoothT = easingType switch
                     {
-                        0 => Mathf.SmoothStep(0f, 1f, t),           // smooth in-out
-                        1 => 1f - Mathf.Pow(1f - t, 3f),            // ease out cubic — snappy start, gentle stop
-                        _ => t * t * (3f - 2f * t)                  // hermite — similar to smoothstep but slightly different feel
+                        0 => Mathf.SmoothStep(0f, 1f, t),
+                        1 => 1f - Mathf.Pow(1f - t, 3f),
+                        _ => t * t * (3f - 2f * t)
                     };
 
                     transform.localPosition = Vector3.Lerp(startPos, targetLocalPos, smoothT);

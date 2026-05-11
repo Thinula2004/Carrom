@@ -65,6 +65,7 @@ namespace BEKStudio
         private bool matchmakingResolved = false;
         private bool intentionallyLeft = false;
         private bool isCreatingRoom = false;
+        bool isFriendRoomFlow = false;
 
         void Awake()
         {
@@ -197,9 +198,6 @@ namespace BEKStudio
                 return;
             }
 
-
-            Debug.Log("N: 1");
-
             // if(MenuController.Instance.UMdata != null && MenuController.Instance.UMdata.player_rank == "diamond")
             // {
             //     MenuController.Instance.VsJoinedRoom();
@@ -227,9 +225,12 @@ namespace BEKStudio
 
             ExitGames.Client.Photon.Hashtable roomHastable = new ExitGames.Client.Photon.Hashtable {
                 { "gameId", GAME_ID },
-                { "roomType", whichRoom }
-                // { "playerRank", playerRank }
+                { "roomType", whichRoom },
+                { "isPrivateRoom", false }
             };
+
+            isFriendRoomFlow = false;
+
             MenuController.Instance.VsJoinedRoom();
             Debug.Log("PR " + playerRank);
             PhotonNetwork.JoinRandomRoom(roomHastable, (byte)2);
@@ -242,6 +243,76 @@ namespace BEKStudio
             {
                 StartCoroutine(OfflineMatchCoroutine());
             }
+        }
+
+        public void FriendFindRoom(string roomCode)
+        {
+            if (string.IsNullOrWhiteSpace(roomCode))
+            {
+                Debug.LogWarning("FriendFindRoom failed: roomCode is empty.");
+                return;
+            }
+
+            matchmakingResolved = false;
+            isCreatingRoom = false;
+            hasJoinedRoom = false;
+            intentionallyLeft = false;
+
+            isFriendRoomFlow = true;
+
+            MenuController.Instance.vsMsgText.text = "Joining friend room...";
+            MenuController.Instance.VsJoinedRoom();
+
+            PhotonNetwork.JoinRoom(roomCode);
+
+            Debug.Log($"Trying to join friend room: {roomCode}");
+        }
+
+        public void CreateFriendRoom(string roomCode)
+        {
+            if (string.IsNullOrWhiteSpace(roomCode))
+            {
+                Debug.LogWarning("CreateFriendRoom failed: roomCode is empty.");
+                return;
+            }
+
+            matchmakingResolved = false;
+            isCreatingRoom = true;
+            hasJoinedRoom = false;
+            intentionallyLeft = false;
+
+            isFriendRoomFlow = true;
+
+            MenuController.Instance.vsMsgText.text = "Creating friend room...";
+            MenuController.Instance.VsJoinedRoom();
+
+            ExitGames.Client.Photon.Hashtable roomProperties =
+                new ExitGames.Client.Photon.Hashtable
+                {
+                    { "gameId", GAME_ID },
+                    { "roomType", whichRoom },
+                    { "isPrivateRoom", true },
+                    { "roomCode", roomCode }
+                };
+
+            RoomOptions roomOptions = new RoomOptions
+            {
+                MaxPlayers = 2,
+                IsVisible = false,
+                IsOpen = true,
+                CustomRoomProperties = roomProperties,
+                CustomRoomPropertiesForLobby = new string[]
+                {
+                    "gameId",
+                    "roomType",
+                    "isPrivateRoom",
+                    "roomCode"
+                }
+            };
+
+            PhotonNetwork.CreateRoom(roomCode, roomOptions);
+
+            Debug.Log($"Creating friend room: {roomCode}");
         }
 
         IEnumerator OfflineMatchCoroutine()
@@ -319,6 +390,15 @@ namespace BEKStudio
 
         public override void OnJoinRandomFailed(short returnCode, string message)
         {
+
+            if (isFriendRoomFlow)
+            {
+                isFriendRoomFlow = false;
+                Debug.LogWarning($"Failed to join friend room: {message}");
+                MenuController.Instance.vsMsgText.text = "Friend room not found.";
+                return;
+            }
+
             if (matchmakingResolved) return; // ← Photon firing this after we already handled it
             
             matchmakingResolved = true;
@@ -391,6 +471,11 @@ namespace BEKStudio
                 joinTimeoutCoroutine = null;
             }
 
+            if (isFriendRoomFlow)
+            {
+                Debug.Log("Joined friend room successfully.");
+                isFriendRoomFlow = false;
+            }
 
             MenuController.Instance.HideOpponentPanel();
             if (PhotonNetwork.CurrentRoom != null && PhotonNetwork.CurrentRoom.PlayerCount > PhotonNetwork.CurrentRoom.MaxPlayers)

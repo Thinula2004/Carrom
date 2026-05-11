@@ -232,6 +232,11 @@ namespace BEKStudio
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
+        public void CloseCoinErrorPanel()
+        {
+            coinErrorPanel.SetActive(false);
+        }
+
         public void OpenFriendsPanel(int roomPrice)
         {
             
@@ -250,12 +255,14 @@ namespace BEKStudio
             }
 
             friendCodeTxt.text = tempFriendCode;
-            friendsPanel.SetActive(true); 
+            friendsPanel.SetActive(true);
+
+            friendAmountTxt.text = "100 LKR";
         }
 
         public void ChangeBetAmount(bool increase)
         {
-            int[] levels = { 100, 200, 500, 1000, 5000 };
+            int[] levels = { 100, 200, 500};
 
             string text = friendAmountTxt.text;
             string amountOnly = text.Replace(" LKR", "").Trim();
@@ -296,6 +303,53 @@ namespace BEKStudio
         public void closeFriendsPanel()
         {
             friendsPanel.SetActive(false);
+        }
+
+        public void OnCustomRoomCreate()
+        {
+
+            string val = friendAmountTxt.text;
+            string friendCode = friendCodeTxt.text;
+            int coinsNeeded = 0;
+
+            string whichRoom = "galle"; 
+
+            if(val == "100 LKR")
+            {
+
+                whichRoom = "galle";
+                coinsNeeded = 100;
+                PhotonController.Instance.roomEntryPice = Constants.ROOM_GALLE_ENTRY_PRICE;
+
+            }else if(val == "200 LKR")
+            {
+
+                whichRoom = "kandy";
+                coinsNeeded = 200;
+                PhotonController.Instance.roomEntryPice = Constants.ROOM_COLOMBO_ENTRY_PRICE;
+
+            }else if(val == "500 LKR")
+            {
+                whichRoom = "colombo";
+                coinsNeeded = 5000000;
+                PhotonController.Instance.roomEntryPice = Constants.ROOM_KANDY_ENTRY_PRICE;
+            }
+
+            string msg = "Your account balance is low!\r\nPlease top up your account\r\nto continue playing";
+            int coinBal = UMdata.total_coins;
+
+            if (coinBal <  coinsNeeded)
+            {
+                CheckCoinBalance(msg);
+            }
+
+            Debug.Log($"Which Room : {whichRoom} Friend Code: {friendCode}");
+            PhotonController.Instance.whichRoom = whichRoom;
+            StartCoroutine(PostGameStatsCoroutine(whichRoom));
+            setupScreens();
+            PlayerPrefs.SetString("roomName", whichRoom);
+            VsJoinedRoom();
+            PhotonController.Instance.CreateFriendRoom(friendCode);
         }
 
         private IEnumerator LoadingProcess()
@@ -1618,7 +1672,7 @@ public class UserData
             }
             else
             {
-                demoProfiles = demoProfiles2;
+                demoProfiles = demoProfiles1;
             }
 
             if (demoProfiles != null && demoProfiles.Count > 0)

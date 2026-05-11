@@ -1936,10 +1936,12 @@ namespace BEKStudio
 
             if (PhotonController.Instance.offlineMatch)
             {
+                PlayerPuck.Instance.isShotDone = true;
                 PlayerPuck.Instance.selectedShot = null;
                 PlayerPuck.Instance.SetRepelMode(false);
                 WhitePuckDamping(false);
                 PlayerPuck.Instance.collider.radius = 0.55f;
+                Time.timeScale = 1f;
             }
 
             isTurnHardRestarting = false;
