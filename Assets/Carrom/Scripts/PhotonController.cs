@@ -395,7 +395,7 @@ namespace BEKStudio
             {
                 isFriendRoomFlow = false;
                 Debug.LogWarning($"Failed to join friend room: {message}");
-                MenuController.Instance.vsMsgText.text = "Friend room not found.";
+                MenuController.Instance.OnJoinFriendRoomFailed();
                 return;
             }
 
@@ -449,6 +449,27 @@ namespace BEKStudio
             roomOptions.EmptyRoomTtl = 0;
             Debug.Log("PR "+playerRank);
             PhotonNetwork.CreateRoom(null, roomOptions);
+        }
+
+        public override void OnJoinRoomFailed(short returnCode, string message)
+        {
+            Debug.LogWarning($"Friend room join failed. Code: {returnCode}, Message: {message}");
+
+            if (isFriendRoomFlow)
+            {
+                isFriendRoomFlow = false;
+                matchmakingResolved = true;
+                isCreatingRoom = false;
+                hasJoinedRoom = false;
+
+                Debug.LogWarning($"Friend room join failed: {message}");
+
+                MenuController.Instance.OnJoinFriendRoomFailed();
+
+                return;
+            }
+
+            Debug.LogWarning($"JoinRoom failed: {message}");
         }
 
         public override void OnJoinedRoom()
@@ -557,6 +578,7 @@ namespace BEKStudio
 
         public override void OnCreatedRoom()
         {
+            Debug.Log("Friend room created successfully: " + PhotonNetwork.CurrentRoom.Name);
         }
 
         public override void OnPlayerEnteredRoom(Player newPlayer)
@@ -565,6 +587,12 @@ namespace BEKStudio
             {
                 StartCoroutine(OnPlayerEnteredRoomCoroutine());
             }
+        }
+
+
+        public override void OnCreateRoomFailed(short returnCode, string message)
+        {
+            Debug.LogWarning($"Friend room create failed. Code: {returnCode}, Message: {message}");
         }
 
         public IEnumerator OnPlayerEnteredRoomCoroutine()

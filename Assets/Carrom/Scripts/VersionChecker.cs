@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class VersionChecker : MonoBehaviour
 {
-    public static string version = "3.0";
+    public static string version = "3.1";
 
     public static string GetVersion()
     {

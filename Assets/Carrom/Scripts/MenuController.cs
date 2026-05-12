@@ -96,8 +96,11 @@ namespace BEKStudio
 
         public GameObject friendsPanel;
         public TMP_Text friendCodeTxt;
+        public TMP_InputField friendCodeInput;
         public string tempFriendCode;
         public TMP_Text friendAmountTxt;
+
+        public GameObject friendCodeErrorPanel, friendRoomClosedPanel;
 
         public string user_token;
 
@@ -156,6 +159,9 @@ namespace BEKStudio
        void Start()
         {
             friendsPanel.SetActive(false);
+
+            friendCodeErrorPanel.SetActive(false);
+            friendRoomClosedPanel.SetActive(false);
             tempFriendCode = null;
             friendCodeTxt.text = "";
             versionIssuePanel.SetActive(false);
@@ -232,37 +238,43 @@ namespace BEKStudio
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
-        public void CloseCoinErrorPanel()
+        public void RefreshScene()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            WebBrowserBridge.Instance.ReloadCurrentPage();
+#else
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+#endif
+        }
+
+        public void CloseErrorPanels()
         {
             coinErrorPanel.SetActive(false);
+            friendCodeErrorPanel.SetActive(false);
         }
 
         public void OpenFriendsPanel(int roomPrice)
         {
-            
             string msg = "Your account balance is low!\r\nPlease top up your account\r\nto continue playing";
             int coinBal = UMdata.total_coins;
 
-            if (coinBal <= roomPrice)
+            if (coinBal < roomPrice)
             {
                 CheckCoinBalance(msg);
                 return;
             }
-            tempFriendCode = "";
-            for (int i = 0; i < 6; i++)
-            {
-                tempFriendCode += (char)UnityEngine.Random.Range('A', 'Z' + 1);
-            }
 
+            friendAmountTxt.text = roomPrice + " LKR";
+
+            tempFriendCode = GenerateFriendCode(roomPrice);
             friendCodeTxt.text = tempFriendCode;
-            friendsPanel.SetActive(true);
 
-            friendAmountTxt.text = "100 LKR";
+            friendsPanel.SetActive(true);
         }
 
         public void ChangeBetAmount(bool increase)
         {
-            int[] levels = { 100, 200, 500};
+            int[] levels = { 100, 200, 500 };
 
             string text = friendAmountTxt.text;
             string amountOnly = text.Replace(" LKR", "").Trim();
@@ -288,7 +300,49 @@ namespace BEKStudio
                 return;
             }
 
-            friendAmountTxt.text = levels[newIndex] + " LKR";
+            int newAmount = levels[newIndex];
+
+            friendAmountTxt.text = newAmount + " LKR";
+
+            tempFriendCode = GenerateFriendCode(newAmount);
+            friendCodeTxt.text = tempFriendCode;
+        }
+
+        private string GenerateFriendCode(int amount)
+        {
+            string code = "";
+
+            // First 5 characters are random
+            for (int i = 0; i < 5; i++)
+            {
+                code += (char)UnityEngine.Random.Range('A', 'Z' + 1);
+            }
+
+            // Last character represents room price
+            char priceChar = 'A';
+
+            switch (amount)
+            {
+                case 100:
+                    priceChar = 'A';
+                    break;
+
+                case 200:
+                    priceChar = 'B';
+                    break;
+
+                case 500:
+                    priceChar = 'C';
+                    break;
+
+                default:
+                    Debug.LogWarning("Unknown friend room amount: " + amount);
+                    priceChar = 'A';
+                    break;
+            }
+
+            code += priceChar;
+            return code;
         }
 
         public void CopyFriendCode()
@@ -326,13 +380,13 @@ namespace BEKStudio
 
                 whichRoom = "kandy";
                 coinsNeeded = 200;
-                PhotonController.Instance.roomEntryPice = Constants.ROOM_COLOMBO_ENTRY_PRICE;
+                PhotonController.Instance.roomEntryPice = Constants.ROOM_KANDY_ENTRY_PRICE;
 
             }else if(val == "500 LKR")
             {
                 whichRoom = "colombo";
-                coinsNeeded = 5000000;
-                PhotonController.Instance.roomEntryPice = Constants.ROOM_KANDY_ENTRY_PRICE;
+                coinsNeeded = 500;
+                PhotonController.Instance.roomEntryPice = Constants.ROOM_COLOMBO_ENTRY_PRICE;
             }
 
             string msg = "Your account balance is low!\r\nPlease top up your account\r\nto continue playing";
@@ -350,6 +404,81 @@ namespace BEKStudio
             PlayerPrefs.SetString("roomName", whichRoom);
             VsJoinedRoom();
             PhotonController.Instance.CreateFriendRoom(friendCode);
+        }
+
+        public void OnCustomRoomJoin()
+        {
+            string friendCode = friendCodeInput.text.Trim();
+
+            Debug.Log(friendCode + "@");
+            Debug.Log(friendCodeTxt.text + "@");
+            Debug.Log(friendCodeTxt.text == friendCode);
+
+            if (string.IsNullOrWhiteSpace(friendCode) || friendCode.Length != 6)
+            {
+                Debug.Log(friendCode.Length);
+                friendCodeErrorPanel.SetActive(true);
+                return;
+            }
+
+            char lastChar = char.ToUpper(friendCode[friendCode.Length - 1]);
+
+            if (lastChar != 'A' && lastChar != 'B' && lastChar != 'C')
+            {
+                Debug.Log(lastChar);
+                friendCodeErrorPanel.SetActive(true);
+                return;
+            }
+
+            int val = 0;
+            string whichRoom = "galle"; 
+
+            switch (lastChar)
+            {
+                case 'A':
+                    val = 100;
+                    whichRoom = "galle";
+                    PhotonController.Instance.roomEntryPice = Constants.ROOM_GALLE_ENTRY_PRICE;
+                    break;
+
+                case 'B':
+                    val = 200;
+                    whichRoom = "kandy";
+                    PhotonController.Instance.roomEntryPice = Constants.ROOM_KANDY_ENTRY_PRICE;
+                    break;
+
+                case 'C':
+                    val = 5000000;
+                    whichRoom = "colombo";
+                    PhotonController.Instance.roomEntryPice = Constants.ROOM_COLOMBO_ENTRY_PRICE;
+                    break;
+
+                default:
+                    Debug.LogWarning("Invalid friend code price character: " + lastChar);
+                    return;
+            }
+
+            string msg = "Your account balance is low!\r\nPlease top up your account\r\nto continue playing";
+            int coinBal = UMdata.total_coins;
+
+            if (coinBal <  val)
+            {
+                CheckCoinBalance(msg);
+            }
+
+            Debug.Log($"Which Room : {whichRoom} Friend Code: {friendCode}");
+            PhotonController.Instance.whichRoom = whichRoom;
+            StartCoroutine(PostGameStatsCoroutine(whichRoom));
+            setupScreens();
+            PlayerPrefs.SetString("roomName", whichRoom);
+            VsJoinedRoom();
+            PhotonController.Instance.FriendFindRoom(friendCode);
+
+        }
+
+        public void OnJoinFriendRoomFailed()
+        {
+            friendRoomClosedPanel.SetActive(true);
         }
 
         private IEnumerator LoadingProcess()
