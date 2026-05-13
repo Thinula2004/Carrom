@@ -9,6 +9,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.Runtime.InteropServices;
 using System;
+using UnityEngine.Purchasing;
 
 //game id length = 36
 namespace BEKStudio
@@ -101,6 +102,7 @@ namespace BEKStudio
         public TMP_Text friendAmountTxt;
 
         public GameObject friendCodeErrorPanel, friendRoomClosedPanel;
+        private bool isFriendRoom = false;
 
         public string user_token;
 
@@ -159,7 +161,7 @@ namespace BEKStudio
        void Start()
         {
             friendsPanel.SetActive(false);
-
+            isFriendRoom = false;
             friendCodeErrorPanel.SetActive(false);
             friendRoomClosedPanel.SetActive(false);
             tempFriendCode = null;
@@ -253,20 +255,18 @@ namespace BEKStudio
             friendCodeErrorPanel.SetActive(false);
         }
 
-        public void OpenFriendsPanel(int roomPrice)
+        public void OpenFriendsPanel()
         {
-            string msg = "Your account balance is low!\r\nPlease top up your account\r\nto continue playing";
-            int coinBal = UMdata.total_coins;
-
-            if (coinBal < roomPrice)
+            if(WebBrowserBridge.Instance != null)
             {
-                CheckCoinBalance(msg);
-                return;
+                Debug.Log("Hello");
             }
+#if UNITY_WEBGL && !UNITY_EDITOR
+            WebBrowserBridge.Instance.ExitFullScreenMode();
+#endif
+            friendAmountTxt.text = "100 LKR";
 
-            friendAmountTxt.text = roomPrice + " LKR";
-
-            tempFriendCode = GenerateFriendCode(roomPrice);
+            tempFriendCode = GenerateFriendCode(100);
             friendCodeTxt.text = tempFriendCode;
 
             friendsPanel.SetActive(true);
@@ -356,6 +356,9 @@ namespace BEKStudio
 
         public void closeFriendsPanel()
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            WebBrowserBridge.Instance.EnterFullScreenMode();
+#endif
             friendsPanel.SetActive(false);
         }
 
@@ -397,6 +400,10 @@ namespace BEKStudio
                 CheckCoinBalance(msg);
             }
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+            WebBrowserBridge.Instance.EnterFullScreenMode();
+#endif
+            isFriendRoom = true;
             Debug.Log($"Which Room : {whichRoom} Friend Code: {friendCode}");
             PhotonController.Instance.whichRoom = whichRoom;
             StartCoroutine(PostGameStatsCoroutine(whichRoom));
@@ -466,6 +473,8 @@ namespace BEKStudio
                 CheckCoinBalance(msg);
             }
 
+            WebBrowserBridge.Instance.EnterFullScreenMode();
+            isFriendRoom = true;
             Debug.Log($"Which Room : {whichRoom} Friend Code: {friendCode}");
             PhotonController.Instance.whichRoom = whichRoom;
             StartCoroutine(PostGameStatsCoroutine(whichRoom));
@@ -1294,6 +1303,7 @@ public class UserData
             }
             else
             {
+                isFriendRoom = false;
                 PhotonController.Instance.whichRoom = room;
                 if (room == "colombo" && Constants.ROOM_COLOMBO_ENTRY_PRICE <= coinBal)
                 {
@@ -1453,7 +1463,14 @@ public class UserData
 
         IEnumerator NoOpponentCountdown()
         {
-            yield return new WaitForSeconds(30f);
+            if (isFriendRoom)
+            {
+                yield return new WaitForSeconds(180f);
+            }
+            else
+            {
+                yield return new WaitForSeconds(30f);
+            }
             AudioManager.Instance.StopRollingSound();
             Debug.Log("No opponent found");
             NoOpponentScreen.SetActive(true);

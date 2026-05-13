@@ -27,5 +27,59 @@ mergeInto(LibraryManager.library, {
 
       document.body.removeChild(textarea);
     }
+  },
+
+  EnterFullscreen: function () {
+    var canvas = document.querySelector("#unity-canvas");
+
+    if (!canvas) {
+      canvas = document.querySelector("canvas");
+    }
+
+    if (!canvas) {
+      console.warn("EnterFullscreen failed: canvas not found.");
+      return;
+    }
+
+    var requestFullscreen =
+      canvas.requestFullscreen ||
+      canvas.webkitRequestFullscreen ||
+      canvas.mozRequestFullScreen ||
+      canvas.msRequestFullscreen;
+
+    if (requestFullscreen) {
+      requestFullscreen.call(canvas).catch(function (err) {
+        console.error("EnterFullscreen failed:", err);
+      });
+    } else {
+      console.warn("Fullscreen API is not supported.");
+    }
+  },
+
+  ExitFullscreen: function () {
+    var exitFullscreen =
+      document.exitFullscreen ||
+      document.webkitExitFullscreen ||
+      document.mozCancelFullScreen ||
+      document.msExitFullscreen;
+
+    var fullscreenElement =
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement;
+
+    if (!fullscreenElement) {
+      console.log("ExitFullscreen ignored: not currently fullscreen.");
+      return;
+    }
+
+    if (exitFullscreen) {
+      exitFullscreen.call(document).catch(function (err) {
+        console.error("ExitFullscreen failed:", err);
+      });
+    } else {
+      console.warn("Exit fullscreen API is not supported.");
+    }
   }
 });

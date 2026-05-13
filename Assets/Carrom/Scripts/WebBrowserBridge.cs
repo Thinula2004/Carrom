@@ -11,6 +11,12 @@ public class WebBrowserBridge : MonoBehaviour
 
     [DllImport("__Internal")]
     private static extern void CopyTextToClipboard(string text);
+
+    [DllImport("__Internal")]
+    private static extern void EnterFullscreen();
+
+    [DllImport("__Internal")]
+    private static extern void ExitFullscreen();
 #endif
 
     private void Awake()
@@ -48,6 +54,24 @@ public class WebBrowserBridge : MonoBehaviour
         CopyTextToClipboard(text);
 #else
         GUIUtility.systemCopyBuffer = text;
+#endif
+    }
+
+    public void EnterFullScreenMode()
+    {
+        Debug.Log("EnterFullScreenMode CALLED");
+
+// #if UNITY_WEBGL && !UNITY_EDITOR
+//         EnterFullscreen();
+// #endif
+    }
+
+    public void ExitFullScreenMode()
+    {
+        Debug.Log("ExitFullScreenMode CALLED");
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        ExitFullscreen();
 #endif
     }
 }
