@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class VersionChecker : MonoBehaviour
 {
-    public static string version = "3.1";
+    public static string version = "3.2";
 
     public static string GetVersion()
     {
@@ -26,8 +26,7 @@ public class VersionChecker : MonoBehaviour
             yield break;
         }
 
-        Debug.Log($"[VersionHandler] Local version: '{version}'");
-        Debug.Log($"[VersionHandler] Remote version: '{remoteVersion}'");
+        Debug.Log($"[VersionHandler] Local version: '{version}' Remote version: '{remoteVersion}'");
 
         try
         {

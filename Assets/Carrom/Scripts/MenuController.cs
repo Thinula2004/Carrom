@@ -89,7 +89,7 @@ namespace BEKStudio
         public GameObject coinErrorPanel;
         public Text coinErrorText;
         public Button ErrorPanelHideBtn;
-        public GameObject loadingPanel, versionIssuePanel;
+        public GameObject versionIssuePanel;
         public TMP_Text versionTxt;
 
         public List<Sprite> demoProfiles1;
@@ -208,22 +208,6 @@ namespace BEKStudio
             PhotonController.Instance.offlineMatch = false;
             PhotonController.Instance.demoPlayer = null;
        }
-
-        void CheckVersion()
-        {
-            StartCoroutine(VersionChecker.CheckVersion(isSame =>
-            {
-                if (isSame)
-                {
-                    loadingPanel.SetActive(false);
-                }
-                else
-                {
-                    loadingPanel.SetActive(false);
-                    versionIssuePanel.SetActive(true);
-                }
-            }));
-        }
 
         public void ShowLoadingScreen()
         {
@@ -494,79 +478,78 @@ namespace BEKStudio
         {
             bool photonReady = false;
             bool userDataReady = false;
-            float loadingProgress = 0f;
-            float maxLoadingTime = 25f; // Maximum loading time
+            bool versionReady = false;
+            bool versionIsSame = false;
+
+            float maxLoadingTime = 25f;
             float timer = 0f;
 
-            // Start both processes concurrently
+            loadingBar.value = 0f;
+
             StartCoroutine(WaitForPhotonConnection(() => photonReady = true));
             StartCoroutine(WaitForUserData(() => userDataReady = true));
 
-            // Update loading bar while waiting
-            while (!photonReady || !userDataReady)
+            StartCoroutine(VersionChecker.CheckVersion(isSame =>
+            {
+                versionIsSame = isSame;
+                versionReady = true;
+            }));
+
+            while (!photonReady || !userDataReady || !versionReady)
             {
                 timer += Time.deltaTime;
 
-                // Check for timeout
                 if (timer >= maxLoadingTime)
                 {
                     Debug.Log("Loading timeout - Connection failed");
+
                     string msg = "No Connection! Please check your internet and try again.";
                     CheckConnection(msg);
+
                     LoadingScreen.SetActive(false);
                     yield break;
                 }
 
-                // Calculate progress based on completion status
-                float targetProgress = 0f;
-                if (photonReady) targetProgress += 0.5f;
-                if (userDataReady) targetProgress += 0.5f;
+                float progress = 0f;
 
-                // Smooth progress bar animation
-                loadingProgress = Mathf.Lerp(loadingProgress, targetProgress, Time.deltaTime * 2f);
-                loadingBar.value = loadingProgress;
+                if (photonReady)
+                    progress += 0.33f;
+
+                if (userDataReady)
+                    progress += 0.33f;
+
+                if (versionReady)
+                    progress += 0.34f;
+
+                loadingBar.value = progress;
 
                 yield return null;
             }
 
-            // Final animation to complete
-            while (loadingBar.value < 0.99f)
-            {
-                loadingBar.value = Mathf.Lerp(loadingBar.value, 1f, Time.deltaTime * 5f);
-                yield return null;
-            }
+            loadingBar.value = 1f;
 
-            // Small delay before hiding loading screen
-            yield return new WaitForSeconds(0.5f);
             LoadingScreen.SetActive(false);
-            loadingPanel.SetActive(true);
-            CheckVersion(); 
-            AudioManager.Instance.StopRollingSound();
+
+            if (!versionIsSame)
+            {
+                versionIssuePanel.SetActive(true);
+            }
+
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.StopRollingSound();
         }
 
         private IEnumerator WaitForPhotonConnection(System.Action onComplete)
         {
-            // Wait until Photon is connected to Master Server and joined lobby
             while (!PhotonNetwork.IsConnectedAndReady ||
-                !PhotonNetwork.InLobby ||
                 PhotonNetwork.Server != Photon.Realtime.ServerConnection.MasterServer)
             {
-                // Additional check to ensure we're in the right state for matchmaking
-                if (PhotonNetwork.IsConnected &&
-                    PhotonNetwork.Server != Photon.Realtime.ServerConnection.MasterServer)
-                {
-                    //Debug.Log("Waiting for Master Server connection...");
-                }
-                else if (PhotonNetwork.IsConnectedAndReady && !PhotonNetwork.InLobby)
-                {
-                    //Debug.Log("Waiting for lobby join...");
-                }
-
-                yield return new WaitForSeconds(0.1f);
+                yield return null;
             }
 
-            Debug.Log("Photon ready for matchmaking - Connected to Master Server and in Lobby");
+            Debug.Log("Photon ready - Connected to Master Server");
             onComplete?.Invoke();
+            
         }
 
         // Centralized method to handle 401 redirects
@@ -827,10 +810,6 @@ namespace BEKStudio
         }
         private string _authToken = "";
 
-
-
-   
-
         [System.Serializable]
         public class UpdateProfileRequest
         {
@@ -904,7 +883,6 @@ public IEnumerator GetUserProfileCoroutine()
     {
         // Add Bearer token authorization
         request.SetRequestHeader("Authorization", "Bearer " + AUTH_TOKEN);
-        Debug.Log("Sending request with Bearer token to: " + apiUrl);
         
         // Send the request
         yield return request.SendWebRequest();
@@ -938,17 +916,7 @@ public IEnumerator GetUserProfileCoroutine()
             ApiResponse response = JsonUtility.FromJson<ApiResponse>(jsonResponse);
 
             if (response != null && response.success)
-            {
-                Debug.Log("Success! Message: " + response.message);
-                Debug.Log("Username: " + response.data.username);
-                Debug.Log("Phone: " + response.data.phone_number);
-                Debug.Log("Total Coins: " + response.data.total_coins);
-                Debug.Log("Account Status: " + response.data.status);
-                Debug.Log("KYC Status: " + response.data.kyc_status);
-                Debug.Log("Win Percentage: " + response.data.win_percentage + "%");
-                Debug.Log("Player Rank: " + response.data.player_rank);
-                Debug.Log("IP Address: " + response.data.ip_address);
-                
+            {   
                 // Use the data
                 OnProfileFetched(response.data);
             }
@@ -967,11 +935,6 @@ private void OnProfileFetched(UserData userData)
     // Handle the fetched user data here
     UMdata = userData;
     Debug.Log("Profile fetched and stored.");
-    Debug.Log($"Username: {UMdata.username}");
-    Debug.Log($"Total Coins: {UMdata.total_coins}");
-    Debug.Log($"Win Percentage: {UMdata.win_percentage}%");
-    Debug.Log($"Player Rank: {UMdata.player_rank}");
-    Debug.Log($"IP Address: {UMdata.ip_address}");
     
     avatarUsernameText.text = LimitNameText(UMdata.username);
     PlayerPrefs.SetString("username", avatarUsernameText.text);
