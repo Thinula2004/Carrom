@@ -428,7 +428,7 @@ namespace BEKStudio
             ExitGames.Client.Photon.Hashtable roomHastable = new ExitGames.Client.Photon.Hashtable {
             { "gameId", GAME_ID },
             { "roomType", whichRoom },
-            { "playerRank", playerRank }
+            { "isPrivateRoom", false }
         };
 
             RoomOptions roomOptions = new RoomOptions();
@@ -437,7 +437,7 @@ namespace BEKStudio
             {
                 "gameId",
                 "roomType",
-                "playerRank"
+                "isPrivateRoom"
             };
 
             roomOptions.IsOpen = true;
