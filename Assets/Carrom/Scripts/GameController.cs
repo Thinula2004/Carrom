@@ -189,6 +189,10 @@ namespace BEKStudio
         public Image redPuckConfirmationImg;
         public TMP_Text versionTxt;
 
+        public GameObject backgroundWarningPanel;
+        public TMP_Text backgroundChancesTxt;
+        private int backgroundChances;
+
         void Awake()
         {
             //PhotonNetwork.SendRate = 30;
@@ -217,6 +221,7 @@ namespace BEKStudio
 
         void Start()
         {
+            backgroundChances = 3;
             versionTxt.text = VersionChecker.GetVersion();
 
             lastOnlineTime = Time.realtimeSinceStartup;
@@ -489,21 +494,33 @@ namespace BEKStudio
             }
         }
 
+        public void ChangeFocus(bool isFocused)
+        {
+            Debug.Log("Debug");
+            OnApplicationFocus(isFocused);
+        }        
+
         void OnApplicationFocus(bool hasFocus)
         {
-            // Debug.Log("Focus: " + hasFocus);
             if (!PhotonController.Instance.offlineMatch)
             {
                 if (!hasFocus)
                 {
                     Debug.Log("Player switched tab.");
                     isPlayerOnTheTab = false;
+                    backgroundChances -= 1;
                 }
                 else
                 {
-                    Debug.Log("Player returned.");
+                    Debug.Log("Player returned");
+                    if(backgroundChances <= 0)
+                    {
+                        ShowDisconnectLose();
+                        return;
+                    }
                     if(isPlayerOnTheTab == false)
                     {
+                        StartCoroutine(ShowBGWarning());
                         isTurnHardRestarting = true;
                         isPlayerOnTheTab = true;
                         if (!PhotonNetwork.IsMasterClient)
@@ -530,6 +547,17 @@ namespace BEKStudio
                     }
                 }
             }
+        }
+
+        public IEnumerator ShowBGWarning()
+        {
+            Debug.Log($"Background Chances : {backgroundChances}");
+            backgroundChancesTxt.text = backgroundChances.ToString();
+            backgroundWarningPanel.SetActive(true);
+
+            yield return new WaitForSeconds(3f);
+
+            backgroundWarningPanel.SetActive(false);
         }
 
         private void PingCheck()
@@ -1088,8 +1116,6 @@ namespace BEKStudio
 
         public void IncrementBetCount()
         {
-            
-
             int lossCount = 0;
             if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("BetCount", out object val))
             {
@@ -1099,8 +1125,6 @@ namespace BEKStudio
             ExitGames.Client.Photon.Hashtable props = new ExitGames.Client.Photon.Hashtable();
             props["BetCount"] = lossCount + 1;
             PhotonNetwork.CurrentRoom.SetCustomProperties(props);
-            
-
         }
 
         private IEnumerator WaitAndWinCredit()

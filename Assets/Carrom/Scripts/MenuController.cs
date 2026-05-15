@@ -1162,7 +1162,6 @@ public class UserData
 
   
         }
-
         public void ShopItemBtn(int id)
         {
             Purchaser.Instance.BuyConsumable(id);
