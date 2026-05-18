@@ -192,6 +192,10 @@ namespace BEKStudio
         public GameObject backgroundWarningPanel;
         public TMP_Text backgroundChancesTxt;
         private int backgroundChances;
+        public int blinkCount;
+        public GameObject blinker;
+        bool blinked;
+        const int MaxBlinkCount = 3;
 
         void Awake()
         {
@@ -221,6 +225,9 @@ namespace BEKStudio
 
         void Start()
         {
+            blinkCount = 0;
+            blinked = false;
+            blinker.SetActive(false);
             backgroundChances = 3;
             versionTxt.text = VersionChecker.GetVersion();
 
@@ -1962,7 +1969,7 @@ namespace BEKStudio
             {
                 PlayerPuck.Instance.isShotDone = true;
                 PlayerPuck.Instance.selectedShot = null;
-                PlayerPuck.Instance.SetRepelMode(false);
+                // PlayerPuck.Instance.SetRepelMode(false);
                 WhitePuckDamping(false);
                 PlayerPuck.Instance.collider.radius = 0.55f;
                 Time.timeScale = 1f;
@@ -3090,10 +3097,10 @@ namespace BEKStudio
         {
             disk.SetActive(true);
 
-            for (int i = 0; i < allPucks.Length; i++)
-            {
-               allPucks[i].gameObject.SetActive(true);
-            }
+            // for (int i = 0; i < allPucks.Length; i++)
+            // {
+            //    allPucks[i].gameObject.SetActive(true);
+            // }
         }
 
         void CheckInternet()
@@ -3151,6 +3158,30 @@ namespace BEKStudio
                     }
                 }
             }
+        }
+
+        public void ShowBlinker()
+        {
+            Debug.Log($"Blinking {blinkCount}");
+            if (blinked)
+            {
+                return;
+            }
+            blinkCount ++;
+            if(blinkCount >= MaxBlinkCount)
+            {
+                blinked = true;
+                PhotonController.Instance.demoPlayer.isWinning = false;
+                StartCoroutine(BlinkCoroutine());
+            }
+        }
+
+        IEnumerator BlinkCoroutine()
+        {
+            Debug.Log("Came Here");
+            blinker.SetActive(true);
+            yield return new WaitForSeconds(0.2f);
+            blinker.SetActive(false);
         }
 
         IEnumerator OfflineReconnectFlow()

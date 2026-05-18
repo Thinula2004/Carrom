@@ -1178,6 +1178,7 @@ namespace BEKStudio
             foreach (Puck puck in blackPucks)
             {
                 Vector2 puckPos = puck.transform.position;
+                if (puckPos.y <= -1.5f) continue;
                 float puckRadius = puck.GetComponent<CircleCollider2D>().radius
                                     * Mathf.Abs(puck.transform.localScale.x);
                 float combinedR = puckRadius + strikerRadius;
@@ -1328,6 +1329,7 @@ namespace BEKStudio
                         if (blockerPuck == targetPuck) continue;
 
                         Vector2 blockerPos = blockerPuck.transform.position;
+                        if (blockerPos.y <= -1.5f) continue; 
                         float blockerR = blockerPuck.GetComponent<CircleCollider2D>().radius * Mathf.Abs(blockerPuck.transform.localScale.x);
 
                         Vector2 toHole = (holePos - targetPos).normalized;
@@ -1335,7 +1337,7 @@ namespace BEKStudio
                         float alignAngle = Vector2.Angle(b2tDir, toHole);
                         if (alignAngle > 50f) continue;
 
-                        if (targetPos.y <= blockerPos.y) continue;
+                        if (targetPos.y - blockerPos.y < 0.3f) continue;
                         if (hole != layout.TopLeft && hole != layout.TopRight) continue;
 
                         if (!IsLine1ClearForCannon(blockerPos, blockerR, targetPos, strikerRadius, targetPuck.gameObject)) continue;
@@ -1770,6 +1772,7 @@ namespace BEKStudio
         {
             GameObject redGO = GameController.Instance.redPuck;
             Vector2 redPos = redGO.transform.position;
+            if (redPos.y <= -1.5f) return; 
             float combinedR = redPuckRadius + strikerRadius;
             float off = strikerRadius + 0.05f;
 

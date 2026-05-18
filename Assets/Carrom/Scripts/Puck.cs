@@ -258,10 +258,16 @@ namespace BEKStudio
                             Debug.Log($"S: Direct Shot Hit Hole Pos {PlayerPuck.Instance.selectedShot.holePosition}");
                             ApplyCollisionVelocityTowardHole(collision.relativeVelocity, PlayerPuck.Instance.selectedShot.holePosition);
 
-                        }else if (PlayerPuck.Instance.selectedShot.puckQueue.Count > 1 && PlayerPuck.Instance.selectedShot.firstPuck.name == gameObject.name)
+                        }else if (PlayerPuck.Instance.selectedShot.puckQueue.Count > 1 && 
+                                PlayerPuck.Instance.selectedShot.firstPuck.name == gameObject.name)
                         {
                             Debug.Log("S: Cannon Shot First Puck Hit");
-                            ApplyCollisionVelocityTowardHole(collision.relativeVelocity, PlayerPuck.Instance.selectedShot.targetPuck.transform.position);
+
+                            ApplyCollisionVelocityTowardCannonTarget(
+                                collision.relativeVelocity,
+                                PlayerPuck.Instance.selectedShot.targetPuck,
+                                PlayerPuck.Instance.selectedShot.holePosition
+                            );
                         }
                     }
                 }
@@ -285,7 +291,62 @@ namespace BEKStudio
             rb.linearVelocity = Vector2.zero;
 
             rb.AddForce(dir * speed * rb.mass, ForceMode2D.Impulse);
-            PlayerPuck.Instance.SetRepelMode(true);
+            // PlayerPuck.Instance.SetRepelMode(true);
+            GameController.Instance.WhitePuckDamping(true);
+        }
+
+        void ApplyCollisionVelocityTowardCannonTarget(Vector2 collisionVelocity, GameObject targetPuck, Vector2 holePosition)
+        {
+            if (!PhotonController.Instance.demoPlayer.isWinning)
+            {
+                return;
+            }
+
+            if (targetPuck == null)
+            {
+                return;
+            }
+
+            Debug.Log("Applying cannon ghost-ball velocity to first puck");
+
+            rb.bodyType = RigidbodyType2D.Dynamic;
+
+            Vector2 targetPos = targetPuck.transform.position;
+
+            CircleCollider2D myCollider = GetComponent<CircleCollider2D>();
+            CircleCollider2D targetCollider = targetPuck.GetComponent<CircleCollider2D>();
+
+            if (myCollider == null || targetCollider == null)
+            {
+                Vector2 fallbackDir = (targetPos - rb.position).normalized;
+                float fallbackSpeed = collisionVelocity.magnitude;
+
+                rb.linearVelocity = Vector2.zero;
+                rb.AddForce(fallbackDir * fallbackSpeed * rb.mass, ForceMode2D.Impulse);
+                return;
+            }
+
+            float myRadius = myCollider.radius * Mathf.Abs(transform.localScale.x);
+            float targetRadius = targetCollider.radius * Mathf.Abs(targetPuck.transform.localScale.x);
+            float combinedRadius = myRadius + targetRadius;
+
+            Vector2 targetToHoleDir = (holePosition - targetPos).normalized;
+
+            if (targetToHoleDir.sqrMagnitude < 0.0001f)
+            {
+                targetToHoleDir = (targetPos - rb.position).normalized;
+            }
+
+            // This is the point where the first puck's center should reach
+            // to hit the target puck from the correct side.
+            Vector2 ghostBallPoint = targetPos - targetToHoleDir * combinedRadius;
+
+            Vector2 dir = (ghostBallPoint - rb.position).normalized;
+            float speed = collisionVelocity.magnitude;
+
+            rb.linearVelocity = Vector2.zero;
+            rb.AddForce(dir * speed * rb.mass, ForceMode2D.Impulse);
+
             GameController.Instance.WhitePuckDamping(true);
         }
 
