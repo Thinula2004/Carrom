@@ -106,14 +106,14 @@ namespace BEKStudio
 
         public string user_token;
 
-         #if UNITY_WEBGL && !UNITY_EDITOR
+#if UNITY_WEBGL && !UNITY_EDITOR
         [DllImport("__Internal")]
         private static extern void OpenUrlInSameTab(string url);
         [DllImport("__Internal")]
         private static extern void OpenUrlReplace(string url);
         [DllImport("__Internal")]
         private static extern void OpenUrlInSelf(string url);
-    #endif
+#endif
 
 
         void Awake()
@@ -131,7 +131,7 @@ namespace BEKStudio
             PlayerPrefs.Save();
             Debug.Log("✅ All PlayerPrefs have been cleared!");
         }
-        
+
         private string LimitNameText(string fullName, int maxLength = 8)
         {
             if (string.IsNullOrEmpty(fullName)) return "";
@@ -157,8 +157,8 @@ namespace BEKStudio
                 return amount.ToString();
             }
         }
-        
-       void Start()
+
+        void Start()
         {
             friendsPanel.SetActive(false);
             isFriendRoom = false;
@@ -172,7 +172,7 @@ namespace BEKStudio
             Application.targetFrameRate = 60;
             AudioManager.Instance.StopRollingSound();
             AudioManager.Instance.StopTimeoutSound();
-            
+
             // ✅ Extract token FIRST before anything else
             string token = GetTokenFromURL();
             if (!string.IsNullOrEmpty(token))
@@ -184,7 +184,7 @@ namespace BEKStudio
             {
                 Debug.LogError("Failed to retrieve token from URL");
             }
-            
+
             // ✅ NOW start loading screen (which will use the token)
             ShowLoadingScreen();
 
@@ -207,7 +207,7 @@ namespace BEKStudio
             ShowRooms();
             PhotonController.Instance.offlineMatch = false;
             PhotonController.Instance.demoPlayer = null;
-       }
+        }
 
         public void ShowLoadingScreen()
         {
@@ -241,7 +241,7 @@ namespace BEKStudio
 
         public void OpenFriendsPanel()
         {
-            if(WebBrowserBridge.Instance != null)
+            if (WebBrowserBridge.Instance != null)
             {
                 Debug.Log("Hello");
             }
@@ -353,23 +353,25 @@ namespace BEKStudio
             string friendCode = friendCodeTxt.text;
             int coinsNeeded = 0;
 
-            string whichRoom = "galle"; 
+            string whichRoom = "galle";
 
-            if(val == "100 LKR")
+            if (val == "100 LKR")
             {
 
                 whichRoom = "galle";
                 coinsNeeded = 100;
                 PhotonController.Instance.roomEntryPice = Constants.ROOM_GALLE_ENTRY_PRICE;
 
-            }else if(val == "200 LKR")
+            }
+            else if (val == "200 LKR")
             {
 
                 whichRoom = "kandy";
                 coinsNeeded = 200;
                 PhotonController.Instance.roomEntryPice = Constants.ROOM_KANDY_ENTRY_PRICE;
 
-            }else if(val == "500 LKR")
+            }
+            else if (val == "500 LKR")
             {
                 whichRoom = "colombo";
                 coinsNeeded = 500;
@@ -379,7 +381,7 @@ namespace BEKStudio
             string msg = "Your account balance is low!\r\nPlease top up your account\r\nto continue playing";
             int coinBal = UMdata.total_coins;
 
-            if (coinBal <  coinsNeeded)
+            if (coinBal < coinsNeeded)
             {
                 CheckCoinBalance(msg);
             }
@@ -422,7 +424,7 @@ namespace BEKStudio
             }
 
             int val = 0;
-            string whichRoom = "galle"; 
+            string whichRoom = "galle";
 
             switch (lastChar)
             {
@@ -452,7 +454,7 @@ namespace BEKStudio
             string msg = "Your account balance is low!\r\nPlease top up your account\r\nto continue playing";
             int coinBal = UMdata.total_coins;
 
-            if (coinBal <  val)
+            if (coinBal < val)
             {
                 CheckCoinBalance(msg);
             }
@@ -549,7 +551,7 @@ namespace BEKStudio
 
             Debug.Log("Photon ready - Connected to Master Server");
             onComplete?.Invoke();
-            
+
         }
 
         // Centralized method to handle 401 redirects
@@ -638,7 +640,7 @@ namespace BEKStudio
             using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(imageUrl))
             {
                 yield return request.SendWebRequest();
-     
+
                 if (request.result == UnityWebRequest.Result.ConnectionError ||
                     request.result == UnityWebRequest.Result.ProtocolError)
                 {
@@ -815,7 +817,7 @@ namespace BEKStudio
         {
             public int total_coins;
         }
-        
+
         public IEnumerator UpdateUserProfileCoroutine_PUT(int newTotalCoins)
         {
             // Validate AUTH_TOKEN
@@ -835,12 +837,12 @@ namespace BEKStudio
                 request.downloadHandler = new DownloadHandlerBuffer();
 
                 yield return request.SendWebRequest();
-                
+
                 if (CheckForUnauthorized(request))
                 {
                     yield break;
                 }
-                
+
                 if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
                 {
                     Debug.LogError($"[UpdateUserProfile:PUT] Error: {request.error} (HTTP {request.responseCode})");
@@ -868,96 +870,96 @@ namespace BEKStudio
         }
 
 
-public IEnumerator GetUserProfileCoroutine()
-{
-    // Validate token exists
-    if (string.IsNullOrEmpty(AUTH_TOKEN))
-    {
-        Debug.LogError("AUTH_TOKEN is empty! Cannot fetch user profile.");
-        UMdata = userDatas;
-        avatarUsernameText.text = LimitNameText("Guest");
-        yield break;
-    }
-
-    using (UnityWebRequest request = UnityWebRequest.Get(apiUrl))
-    {
-        // Add Bearer token authorization
-        request.SetRequestHeader("Authorization", "Bearer " + AUTH_TOKEN);
-        
-        // Send the request
-        yield return request.SendWebRequest();
-        
-        // Check for 401 Unauthorized
-        if (CheckForUnauthorized(request))
+        public IEnumerator GetUserProfileCoroutine()
         {
-            yield break;
-        }
-        
-
-        // Check for errors
-        if (request.result == UnityWebRequest.Result.ConnectionError ||
-            request.result == UnityWebRequest.Result.ProtocolError)
-        {
-            Debug.LogError("Error: " + request.error);
-            Debug.LogError("Response Code: " + request.responseCode);
-            Debug.LogError("MSG: " + request.downloadHandler.text);
-            
-            // Fallback to default user data
-            UMdata = userDatas;
-            avatarUsernameText.text = LimitNameText("Guest");
-        }
-        else
-        {
-            // Success - parse the response
-            string jsonResponse = request.downloadHandler.text;
-            Debug.Log("Raw Response: " + jsonResponse);
-
-            // Parse the API response
-            ApiResponse response = JsonUtility.FromJson<ApiResponse>(jsonResponse);
-
-            if (response != null && response.success)
-            {   
-                // Use the data
-                OnProfileFetched(response.data);
-            }
-            else
+            // Validate token exists
+            if (string.IsNullOrEmpty(AUTH_TOKEN))
             {
-                Debug.LogWarning("API returned success=false");
+                Debug.LogError("AUTH_TOKEN is empty! Cannot fetch user profile.");
                 UMdata = userDatas;
                 avatarUsernameText.text = LimitNameText("Guest");
+                yield break;
+            }
+
+            using (UnityWebRequest request = UnityWebRequest.Get(apiUrl))
+            {
+                // Add Bearer token authorization
+                request.SetRequestHeader("Authorization", "Bearer " + AUTH_TOKEN);
+
+                // Send the request
+                yield return request.SendWebRequest();
+
+                // Check for 401 Unauthorized
+                if (CheckForUnauthorized(request))
+                {
+                    yield break;
+                }
+
+
+                // Check for errors
+                if (request.result == UnityWebRequest.Result.ConnectionError ||
+                    request.result == UnityWebRequest.Result.ProtocolError)
+                {
+                    Debug.LogError("Error: " + request.error);
+                    Debug.LogError("Response Code: " + request.responseCode);
+                    Debug.LogError("MSG: " + request.downloadHandler.text);
+
+                    // Fallback to default user data
+                    UMdata = userDatas;
+                    avatarUsernameText.text = LimitNameText("Guest");
+                }
+                else
+                {
+                    // Success - parse the response
+                    string jsonResponse = request.downloadHandler.text;
+                    Debug.Log("Raw Response: " + jsonResponse);
+
+                    // Parse the API response
+                    ApiResponse response = JsonUtility.FromJson<ApiResponse>(jsonResponse);
+
+                    if (response != null && response.success)
+                    {
+                        // Use the data
+                        OnProfileFetched(response.data);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("API returned success=false");
+                        UMdata = userDatas;
+                        avatarUsernameText.text = LimitNameText("Guest");
+                    }
+                }
             }
         }
-    }
-}
 
-private void OnProfileFetched(UserData userData)
-{
-    // Handle the fetched user data here
-    UMdata = userData;
-    Debug.Log("Profile fetched and stored.");
-    
-    avatarUsernameText.text = LimitNameText(UMdata.username);
-    PlayerPrefs.SetString("username", avatarUsernameText.text);
+        private void OnProfileFetched(UserData userData)
+        {
+            // Handle the fetched user data here
+            UMdata = userData;
+            Debug.Log("Profile fetched and stored.");
 
-    tempCoin = UMdata.total_coins;
-     
-    PhotonNetwork.NickName = UMdata.username;
+            avatarUsernameText.text = LimitNameText(UMdata.username);
+            PlayerPrefs.SetString("username", avatarUsernameText.text);
 
-    if (!string.IsNullOrEmpty(userData.profile_image_url))
-    {
-        PlayerPrefs.SetString("profileimage", userData.profile_image_url);
-        StartCoroutine(LoadProfileImage(userData.profile_image_url));
-    }
-    
-    // Store additional player data in Photon custom properties
-    ExitGames.Client.Photon.Hashtable playerData = new ExitGames.Client.Photon.Hashtable();
-    playerData["profile_image_url"] = userData.profile_image_url;
-    playerData["win_percentage"] = userData.win_percentage;
-    playerData["player_rank"] = userData.player_rank;
-    PhotonNetwork.LocalPlayer.SetCustomProperties(playerData);
+            tempCoin = UMdata.total_coins;
 
-    UpdateCurrencyText();
-}
+            PhotonNetwork.NickName = UMdata.username;
+
+            if (!string.IsNullOrEmpty(userData.profile_image_url))
+            {
+                PlayerPrefs.SetString("profileimage", userData.profile_image_url);
+                StartCoroutine(LoadProfileImage(userData.profile_image_url));
+            }
+
+            // Store additional player data in Photon custom properties
+            ExitGames.Client.Photon.Hashtable playerData = new ExitGames.Client.Photon.Hashtable();
+            playerData["profile_image_url"] = userData.profile_image_url;
+            playerData["win_percentage"] = userData.win_percentage;
+            playerData["player_rank"] = userData.player_rank;
+            PhotonNetwork.LocalPlayer.SetCustomProperties(playerData);
+
+            UpdateCurrencyText();
+        }
 
         // API Response structure
         [System.Serializable]
@@ -969,32 +971,32 @@ private void OnProfileFetched(UserData userData)
         }
 
         [System.Serializable]
-public class UserData
-{
-    public string id;
-    public string username;
-    public string phone_number;
-    public string email;
-    public string password_hash;
-    public int total_coins;
-    public string profile_image_url;
-    public bool is_active;
-    public bool is_verified;
-    public string status;
-    public string suspension_reason;
-    public string suspended_until;
-    public string kyc_status;
-    public string kyc_documents;
-    public int risk_score;
-    public string created_at;
-    public string updated_at;
-    public string last_login_at;
-    public string suspended_by;
-    public string game_id;
-    public string ip_address;
-    public float win_percentage;  // Use float for percentage values
-    public string player_rank;
-}
+        public class UserData
+        {
+            public string id;
+            public string username;
+            public string phone_number;
+            public string email;
+            public string password_hash;
+            public int total_coins;
+            public string profile_image_url;
+            public bool is_active;
+            public bool is_verified;
+            public string status;
+            public string suspension_reason;
+            public string suspended_until;
+            public string kyc_status;
+            public string kyc_documents;
+            public int risk_score;
+            public string created_at;
+            public string updated_at;
+            public string last_login_at;
+            public string suspended_by;
+            public string game_id;
+            public string ip_address;
+            public float win_percentage;  // Use float for percentage values
+            public string player_rank;
+        }
 
         public string GetTokenFromURL()
         {
@@ -1094,7 +1096,7 @@ public class UserData
             Debug.Log("Editor mode - GAME_ID set to: " + GAME_ID);
             return user_token;
 #endif
-            
+
             Debug.LogError("Failed to extract token and game ID from URL");
             return null;
         }
@@ -1108,7 +1110,7 @@ public class UserData
 
         public void UpdateCurrencyText()
         {
-            if(UMdata.total_coins == 0)
+            if (UMdata.total_coins == 0)
             {
                 coinText.text = "0";
             }
@@ -1160,7 +1162,7 @@ public class UserData
                 return;
             }
 
-  
+
         }
         public void ShopItemBtn(int id)
         {
@@ -1237,11 +1239,11 @@ public class UserData
         {
             coinErrorPanel.SetActive(false);
 
-    #if UNITY_WEBGL && !UNITY_EDITOR
+#if UNITY_WEBGL && !UNITY_EDITOR
             OpenUrlReplace("https://playport.lk");
-    #else
+#else
             Application.OpenURL("https://playport.lk");
-    #endif
+#endif
         }
 
         private void setupScreens()
@@ -1272,7 +1274,15 @@ public class UserData
                     StartCoroutine(PostGameStatsCoroutine(room));
                     setupScreens();
                     PhotonController.Instance.roomEntryPice = Constants.ROOM_COLOMBO_ENTRY_PRICE;
-                    PhotonController.Instance.GetBotStatus();
+                    BR_APIManager.BotStateData botData = new BR_APIManager.BotStateData
+                    {
+                        is_bot_activated = false,
+                        is_carrom_bot_activated = false,
+                        current_carrom_sequence = null,
+                        is_fresh_carrom_user = false,
+                        is_fresh_user = false
+                    };
+                    PhotonController.Instance.FindRoom(botData);
                     PlayerPrefs.SetString("roomName", room);
                     VsJoinedRoom();
                 }
@@ -1290,7 +1300,15 @@ public class UserData
                     StartCoroutine(PostGameStatsCoroutine(room));
                     setupScreens();
                     PhotonController.Instance.roomEntryPice = Constants.ROOM_KANDY_ENTRY_PRICE;
-                    PhotonController.Instance.GetBotStatus();
+                    BR_APIManager.BotStateData botData = new BR_APIManager.BotStateData
+                    {
+                        is_bot_activated = false,
+                        is_carrom_bot_activated = false,
+                        current_carrom_sequence = null,
+                        is_fresh_carrom_user = false,
+                        is_fresh_user = false
+                    };
+                    PhotonController.Instance.FindRoom(botData);
                     PlayerPrefs.SetString("roomName", room);
                     VsJoinedRoom();
                 }
@@ -1349,7 +1367,8 @@ public class UserData
             PhotonNetwork.LeaveRoom();
         }
 
-        public void HideOpponentPanel() {
+        public void HideOpponentPanel()
+        {
             NoOpponentScreen.SetActive(false);
 
         }
@@ -1380,7 +1399,7 @@ public class UserData
                 StopCoroutine(noOpponentFound);
                 noOpponentFound = null;
             }
-            
+
             if (OpponentFound != null)
             {
                 StopCoroutine(OpponentFound);
@@ -1436,7 +1455,8 @@ public class UserData
             AudioManager.Instance.StopRollingSound();
             Debug.Log("No opponent found");
             NoOpponentScreen.SetActive(true);
-            if (PhotonNetwork.InRoom){
+            if (PhotonNetwork.InRoom)
+            {
                 PhotonNetwork.CurrentRoom.IsOpen = false;
                 PhotonNetwork.CurrentRoom.IsVisible = false;
             }
@@ -1486,7 +1506,7 @@ public class UserData
             {
                 PhotonNetwork.LeaveRoom();
             }
-            
+
             string token = GetTokenFromURL();
             if (!string.IsNullOrEmpty(token))
             {
@@ -1497,7 +1517,7 @@ public class UserData
             {
                 Debug.LogError("Failed to retrieve token from URL");
             }
-            
+
             // ✅ NOW start loading screen (which will use the token)
             ShowLoadingScreen();
             mainScreen.SetActive(false);
@@ -1512,20 +1532,20 @@ public class UserData
         public void VsOnPlayerJoinedRoom()
         {
             AudioManager.Instance.StopRollingSound();
-            
+
             if (PhotonNetwork.CurrentRoom.PlayerCount == 2)
             {
                 PhotonNetwork.CurrentRoom.IsOpen = false;
                 PhotonNetwork.CurrentRoom.IsVisible = false;
 
                 UpdateVsNames();
-                
+
                 // Stop the other coroutine
                 if (OpponentFound != null)
                 {
                     StopCoroutine(OpponentFound);
                 }
-                
+
                 if (OpponentJoined == null)
                 {
                     OpponentJoined = OpponentJoinedCountdown();
@@ -1539,7 +1559,7 @@ public class UserData
                 StartCoroutine(OpponentJoined);
             }
         }
-        
+
 
         IEnumerator OpponentJoinedCountdown()
         {
@@ -1584,7 +1604,7 @@ public class UserData
         public IEnumerator BotJoinedRoomCoroutine()
         {
             AudioManager.Instance.StopRollingSound();
-            
+
             if (noOpponentFound != null)
             {
                 StopCoroutine(noOpponentFound);
@@ -1615,9 +1635,9 @@ public class UserData
             else
             {
                 WebBrowserBridge.Instance.ReloadCurrentPage();
-            } 
+            }
         }
-        
+
         void VsStartMatch()
         {
             if (!PhotonController.Instance.offlineMatch)
@@ -1660,7 +1680,7 @@ public class UserData
                     StopCoroutine(OpponentJoined);
                 }
             }
-            
+
             int currentCoin = tempCoin;
             int newCoin = currentCoin - PhotonController.Instance.roomEntryPice;
 
@@ -1685,7 +1705,7 @@ public class UserData
             });
 
             if (!PhotonController.Instance.offlineMatch)
-            {    
+            {
                 if (PhotonNetwork.IsMasterClient)
                 {
                     PhotonNetwork.LoadLevel("Game");

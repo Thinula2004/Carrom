@@ -432,7 +432,7 @@ public class BR_APIManager : MonoBehaviour
         }
     }
 
-    public void PostBetTransaction(int betAmount, string result, string roundId, System.Action<bool, string> callback, string matchData="")
+    public void PostBetTransaction(int betAmount, string result, string roundId, System.Action<bool, string> callback, string matchData = "")
     {
         StartCoroutine(PostBetTransactionCoroutine(betAmount, result, roundId, callback, matchData));
     }
@@ -466,14 +466,14 @@ public class BR_APIManager : MonoBehaviour
                 result = result,
                 round_id = roundId,
                 match_data = "[DEMO] " + botName,
-                current_sequence = PhotonController.Instance.demoPlayer.isFresh ? !PhotonController.Instance.demoPlayer.isWinning : true
+                current_sequence = PhotonController.Instance.demoPlayer.isFresh ? !PhotonController.Instance.demoPlayer.isWinning : false
             };
 
             json = JsonUtility.ToJson(betRequest);
         }
         else
         {
-            
+
             var betRequest = new BetTransactionRequest
             {
                 game_id = GAME_ID,
@@ -601,6 +601,7 @@ public class BR_APIManager : MonoBehaviour
         {
             BotStateResponse response = JsonConvert.DeserializeObject<BotStateResponse>(json);
             Debug.Log("Bot State Success. Response: " + json);
+
 
             PhotonController.Instance.FindRoom(
                 response.data

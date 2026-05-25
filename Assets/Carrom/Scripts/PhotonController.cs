@@ -179,9 +179,9 @@ namespace BEKStudio
 
             if (response.is_fresh_carrom_user)
             {
-                if(whichRoom == "galle")
-                {    
-                    if(response.current_carrom_sequence != null)
+                if (whichRoom == "galle")
+                {
+                    if (response.current_carrom_sequence != null)
                     {
                         bool value = response.current_carrom_sequence ?? false;
                         MenuController.Instance.VsJoinedRoom();
@@ -191,14 +191,14 @@ namespace BEKStudio
                 return;
             }
 
-            MenuController.Instance.VsJoinedRoom();
-            if (isBotActivated)
-            {
-                StartCoroutine(FreshUserOfflineMatchCoroutine(false));
-                return;
-            }
+            // MenuController.Instance.VsJoinedRoom();
+            // if (isBotActivated)
+            // {
+            //     StartCoroutine(FreshUserOfflineMatchCoroutine(false));
+            //     return;
+            // }
 
-            // if(MenuController.Instance.UMdata != null && MenuController.Instance.UMdata.player_rank == "diamond")
+            // if (MenuController.Instance.UMdata != null && MenuController.Instance.UMdata.player_rank == "diamond")
             // {
             //     MenuController.Instance.VsJoinedRoom();
             //     if (isBotActivated)
@@ -208,7 +208,7 @@ namespace BEKStudio
             //     return;
             // }
 
-            string playerRank = "bronze"; 
+            string playerRank = "bronze";
             if (MenuController.Instance.UMdata != null && !string.IsNullOrEmpty(MenuController.Instance.UMdata.player_rank))
             {
                 if (MenuController.Instance.UMdata.player_rank == "bronze" || MenuController.Instance.UMdata.player_rank == "silver" || MenuController.Instance.UMdata.player_rank == "gold")
@@ -234,10 +234,11 @@ namespace BEKStudio
             MenuController.Instance.VsJoinedRoom();
             Debug.Log("PR " + playerRank);
             PhotonNetwork.JoinRandomRoom(roomHastable, (byte)2);
+            Debug.Log("R: Joining Random");
 
             if (joinTimeoutCoroutine != null) StopCoroutine(joinTimeoutCoroutine);
             joinTimeoutCoroutine = StartCoroutine(JoinRoomTimeout());
-            
+
             Debug.Log($"Is it on {isBotActivated}");
             if (isBotActivated)
             {
@@ -317,16 +318,18 @@ namespace BEKStudio
 
         IEnumerator OfflineMatchCoroutine()
         {
+            Debug.Log("R: Offline Match Coroutine Started");
             yield return new WaitForSeconds(Random.Range(20f, 25f));
+            Debug.Log("R: Setting Bot");
             if (PhotonNetwork.InRoom)
             {
-                if(PhotonNetwork.PlayerList.Length > 1)
+                if (PhotonNetwork.PlayerList.Length > 1)
                 {
                     yield break;
                 }
             }
 
-            if(MenuController.Instance.noOpponentFound != null)
+            if (MenuController.Instance.noOpponentFound != null)
             {
                 StopCoroutine(MenuController.Instance.noOpponentFound);
             }
@@ -351,7 +354,7 @@ namespace BEKStudio
             Debug.Log($"N: Fresh User Offline Coroutine Started. Sequence {currentSequence}");
             yield return new WaitForSeconds(Random.Range(3f, 10f));
 
-            if(MenuController.Instance.noOpponentFound != null)
+            if (MenuController.Instance.noOpponentFound != null)
             {
                 StopCoroutine(MenuController.Instance.noOpponentFound);
             }
@@ -400,10 +403,10 @@ namespace BEKStudio
             }
 
             if (matchmakingResolved) return; // ← Photon firing this after we already handled it
-            
+
             matchmakingResolved = true;
             isCreatingRoom = true;
-            
+
             if (joinTimeoutCoroutine != null)
             {
                 StopCoroutine(joinTimeoutCoroutine);
@@ -447,7 +450,7 @@ namespace BEKStudio
             // Keep PlayerTtl for match rooms (grace to rejoin after brief drops)
             roomOptions.PlayerTtl = 15000;  // 30s
             roomOptions.EmptyRoomTtl = 0;
-            Debug.Log("PR "+playerRank);
+            Debug.Log("PR " + playerRank);
             PhotonNetwork.CreateRoom(null, roomOptions);
         }
 
@@ -601,7 +604,7 @@ namespace BEKStudio
 
             if (PhotonNetwork.CurrentRoom == null) yield break;
 
-            if(PhotonNetwork.CurrentRoom.PlayerCount == 2)
+            if (PhotonNetwork.CurrentRoom.PlayerCount == 2)
             {
                 Debug.Log("Both players in room - starting game");
                 PhotonNetwork.CurrentRoom.IsOpen = false;
@@ -665,15 +668,16 @@ namespace BEKStudio
                             NotifyPlayerMissing(player.ActorNumber);
                             return;
                         }
-                         // only handle one missing player at a time
-                    }else
+                        // only handle one missing player at a time
+                    }
+                    else
                     {
                         if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("playerMissing", out object missingPlayerObj) &&
                             missingPlayerObj is int missingId &&
                             missingId == player.ActorNumber)
                         {
                             Debug.Log($"D: Player {player.ActorNumber} reconnected — clearing wait overlay.");
-                            
+
                             ExitGames.Client.Photon.Hashtable props = new ExitGames.Client.Photon.Hashtable();
                             props["playerMissing"] = null;
                             PhotonNetwork.CurrentRoom.SetCustomProperties(props);
@@ -694,7 +698,7 @@ namespace BEKStudio
             ExitGames.Client.Photon.Hashtable roomProps = new ExitGames.Client.Photon.Hashtable();
             roomProps["playerMissing"] = actorNumber;
             PhotonNetwork.CurrentRoom.SetCustomProperties(roomProps);
-            Debug.Log("D: Notifying player missing "+ actorNumber);
+            Debug.Log("D: Notifying player missing " + actorNumber);
         }
 
         //public override void OnMasterClientSwitched(Player newMasterClient)

@@ -203,11 +203,11 @@ namespace BEKStudio
                     }
                 }
 
-                if(PhotonController.Instance.offlineMatch && PlayerPuck.Instance.selectedShot != null && PlayerPuck.Instance.selectedShot.puckQueue != null && PlayerPuck.Instance.selectedShot.puckQueue.Count > 1 && collision.gameObject.name == PlayerPuck.Instance.selectedShot.firstPuck.name && PlayerPuck.Instance.selectedShot.targetPuck.name == gameObject.name)
+                if (PhotonController.Instance.offlineMatch && PlayerPuck.Instance.selectedShot != null && PlayerPuck.Instance.selectedShot.puckQueue != null && PlayerPuck.Instance.selectedShot.puckQueue.Count > 1 && collision.gameObject.name == PlayerPuck.Instance.selectedShot.firstPuck.name && PlayerPuck.Instance.selectedShot.targetPuck.name == gameObject.name)
                 {
                     Debug.Log("S: Cannon Shot Target Puck Hit");
                     GameObject firstPuck = collision.gameObject;
-                    if(PlayerPuck.Instance.selectedShot.type == "BANK CANNON SHOT")
+                    if (PlayerPuck.Instance.selectedShot.type == "BANK CANNON SHOT")
                     {
                         firstPuck.GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
                     }
@@ -251,14 +251,15 @@ namespace BEKStudio
                 }
                 if (GameController.Instance.hasBroken && PhotonController.Instance.offlineMatch)
                 {
-                    if(PlayerPuck.Instance.selectedShot != null && PlayerPuck.Instance.selectedShot.targetPuck != null && PlayerPuck.Instance.selectedShot.puckQueue != null)
+                    if (PlayerPuck.Instance.selectedShot != null && PlayerPuck.Instance.selectedShot.targetPuck != null && PlayerPuck.Instance.selectedShot.puckQueue != null)
                     {
-                        if(PlayerPuck.Instance.selectedShot.targetPuck.name == gameObject.name)
+                        if (PlayerPuck.Instance.selectedShot.targetPuck.name == gameObject.name)
                         {
                             Debug.Log($"S: Direct Shot Hit Hole Pos {PlayerPuck.Instance.selectedShot.holePosition}");
                             ApplyCollisionVelocityTowardHole(collision.relativeVelocity, PlayerPuck.Instance.selectedShot.holePosition);
 
-                        }else if (PlayerPuck.Instance.selectedShot.puckQueue.Count > 1 && 
+                        }
+                        else if (PlayerPuck.Instance.selectedShot.puckQueue.Count > 1 &&
                                 PlayerPuck.Instance.selectedShot.firstPuck.name == gameObject.name)
                         {
                             Debug.Log("S: Cannon Shot First Puck Hit");
@@ -291,7 +292,7 @@ namespace BEKStudio
             rb.linearVelocity = Vector2.zero;
 
             rb.AddForce(dir * speed * rb.mass, ForceMode2D.Impulse);
-            // PlayerPuck.Instance.SetRepelMode(true);
+            PlayerPuck.Instance.SetRepelMode(true);
             GameController.Instance.WhitePuckDamping(true);
         }
 
@@ -542,7 +543,7 @@ namespace BEKStudio
                 }
                 else
                 {
-                    PuckOnHole(gameObject.tag, gameObject.name);   
+                    PuckOnHole(gameObject.tag, gameObject.name);
                 }
             }
         }
@@ -551,19 +552,22 @@ namespace BEKStudio
         {
             if (col.CompareTag("Section"))
             {
-                if(col.gameObject.name == GameController.BOTTOM_RIGHT_SECTION)
+                if (col.gameObject.name == GameController.BOTTOM_RIGHT_SECTION)
                 {
                     whichArea = GameController.BOTTOM_RIGHT_SECTION;
 
-                }else if(col.gameObject.name == GameController.BOTTOM_LEFT_SECTION)
+                }
+                else if (col.gameObject.name == GameController.BOTTOM_LEFT_SECTION)
                 {
                     whichArea = GameController.BOTTOM_LEFT_SECTION;
 
-                }else if(col.gameObject.name == GameController.TOP_LEFT_SECTION)
+                }
+                else if (col.gameObject.name == GameController.TOP_LEFT_SECTION)
                 {
                     whichArea = GameController.TOP_LEFT_SECTION;
 
-                }else if(col.gameObject.name == GameController.TOP_RIGHT_SECTION)
+                }
+                else if (col.gameObject.name == GameController.TOP_RIGHT_SECTION)
                 {
                     whichArea = GameController.TOP_RIGHT_SECTION;
                 }

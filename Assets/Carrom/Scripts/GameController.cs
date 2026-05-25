@@ -173,7 +173,7 @@ namespace BEKStudio
 
         public Transform mainCam;
         public float focusTime;
-        [HideInInspector]public bool redPuckCollectedLocal = false;
+        [HideInInspector] public bool redPuckCollectedLocal = false;
         public const string BOTTOM_RIGHT_SECTION = "BottomRightSection", BOTTOM_LEFT_SECTION = "BottomLeftSection", TOP_RIGHT_SECTION = "TopRightSection", TOP_LEFT_SECTION = "TopLeftSection";
         public const string BOTTOM_LEFT_HOLE = "Left Down", BOTTOM_RIGHT_HOLE = "Right Down", TOP_LEFT_HOLE = "Left Up", TOP_RIGHT_HOLE = "Right Up";
         public const string LEFT_WALL = "LeftWall", RIGHT_WALL = "RightWall", TOP_WALL = "TopWall", BOTTOM_WALL = "BottomWall", NO_WALL = "NoWall";
@@ -201,7 +201,7 @@ namespace BEKStudio
         {
             //PhotonNetwork.SendRate = 30;
             PhotonNetwork.SerializationRate = 25;
-    
+
             NamePanelGameWin.SetActive(false);
             WinBetAnim.SetActive(false);
             HomeBtn.SetActive(false);
@@ -235,7 +235,7 @@ namespace BEKStudio
             hasBroken = false;
             offlineReconnectFlow = null;
             if (!PhotonController.Instance.offlineMatch)
-            {    
+            {
                 ExitGames.Client.Photon.Hashtable rp = new ExitGames.Client.Photon.Hashtable();
                 rp["currentTurnPlayer"] = PhotonNetwork.LocalPlayer.ActorNumber;
                 PhotonNetwork.CurrentRoom.SetCustomProperties(rp);
@@ -252,7 +252,7 @@ namespace BEKStudio
             OpponentimageUrl = PlayerPrefs.GetString("opponentimage");
             string PlayerNameTemp = PhotonNetwork.LocalPlayer.NickName;
             PlayerNameGameWin.text = LimitNameText(PlayerNameTemp);
-            
+
             LoadingPanel.SetActive(true);
             StartCoroutine(LoadingCoroutine());
 
@@ -262,13 +262,13 @@ namespace BEKStudio
             if (!PhotonController.Instance.offlineMatch)
             {
                 if (!string.IsNullOrEmpty(OpponentimageUrl))
-                StartCoroutine(LoadImageFromUrl(OpponentimageUrl, OpponenttargetImage, defaultSprite));
+                    StartCoroutine(LoadImageFromUrl(OpponentimageUrl, OpponenttargetImage, defaultSprite));
             }
             else
             {
                 OpponenttargetImage.sprite = PhotonController.Instance.demoPlayer != null ? PhotonController.Instance.demoPlayer.profilePic : defaultSprite;
             }
-            
+
             RoomName = PlayerPrefs.GetString("roomName");
             AudioManager.Instance.StopRollingSound();
 
@@ -334,7 +334,7 @@ namespace BEKStudio
                     topLeftpuckIcon.sprite = whitePuckSprite;
                 }
 
-                if(PhotonNetwork.LocalPlayer.ActorNumber != 1)
+                if (PhotonNetwork.LocalPlayer.ActorNumber != 1)
                 {
                     Quaternion camRot = mainCam.rotation;
                     camRot.z = -180;
@@ -347,7 +347,7 @@ namespace BEKStudio
                     PlayerPuck.Instance.tutorial.GetComponent<SpriteRenderer>().sprite = tutorialSprite;
                 }
 
-                    // Initialize masterClientTag from the actual current master client
+                // Initialize masterClientTag from the actual current master client
                 if (PhotonNetwork.InRoom && PhotonNetwork.MasterClient != null && PhotonNetwork.MasterClient.CustomProperties.ContainsKey("tag"))
                 {
                     masterClientTag = (string)PhotonNetwork.MasterClient.CustomProperties["tag"];
@@ -420,7 +420,7 @@ namespace BEKStudio
             if (waitingForOpponentText != null) waitingForOpponentText.SetActive(false);
             if (LoseAPIErrorPanel != null) LoseAPIErrorPanel.SetActive(false);
 
-            if(PhotonController.Instance.offlineMatch)
+            if (PhotonController.Instance.offlineMatch)
             {
                 RPC_CheckTurn();
             }
@@ -428,7 +428,7 @@ namespace BEKStudio
 
         void SetupPuckDampings()
         {
-            foreach(Puck puck in allPucks)
+            foreach (Puck puck in allPucks)
             {
                 if (puck.CompareTag("White"))
                 {
@@ -505,7 +505,7 @@ namespace BEKStudio
         {
             Debug.Log("Debug");
             OnApplicationFocus(isFocused);
-        }        
+        }
 
         void OnApplicationFocus(bool hasFocus)
         {
@@ -520,12 +520,12 @@ namespace BEKStudio
                 else
                 {
                     Debug.Log("Player returned");
-                    if(backgroundChances <= 0)
+                    if (backgroundChances <= 0)
                     {
                         ShowDisconnectLose();
                         return;
                     }
-                    if(isPlayerOnTheTab == false)
+                    if (isPlayerOnTheTab == false)
                     {
                         StartCoroutine(ShowBGWarning());
                         isTurnHardRestarting = true;
@@ -547,7 +547,7 @@ namespace BEKStudio
                 {
                     Debug.Log($"Out Time {focusTime}\nIn Time {Time.realtimeSinceStartup}\n Diff {Time.realtimeSinceStartup - focusTime}");
                     float diff = Time.realtimeSinceStartup - focusTime;
-                    if(diff >= 15)
+                    if (diff >= 15)
                     {
                         HideDiskAndPucks();
                         ShowDisconnectLose();
@@ -597,13 +597,13 @@ namespace BEKStudio
 
         public void ShowWaitingForOpponent()
         {
-            
+
             if (winnerAnnounced || gameState == GameState.WIN || gameState == GameState.LOSE) return;
 
-            if (waitingForOpponentText != null) 
-            { 
-                waitingForOpponentText.SetActive(true); 
-                PlayerPuck.Instance.DisableTouchControls(); 
+            if (waitingForOpponentText != null)
+            {
+                waitingForOpponentText.SetActive(true);
+                PlayerPuck.Instance.DisableTouchControls();
                 isTurnHardRestarting = true;
             }
         }
@@ -761,17 +761,17 @@ namespace BEKStudio
 
         public override void OnPlayerPropertiesUpdate(Player target, ExitGames.Client.Photon.Hashtable changedProps)
         {
-            if(PhotonNetwork.IsMasterClient && AllLoaded() && !isFirstTurnStarted)
+            if (PhotonNetwork.IsMasterClient && AllLoaded() && !isFirstTurnStarted)
             {
                 isFirstTurnStarted = true;
-                if(PhotonNetwork.MasterClient.ActorNumber != 1)
+                if (PhotonNetwork.MasterClient.ActorNumber != 1)
                 {
                     // isFirstSwitch = true;
                     // PhotonNetwork.SetMasterClient(PhotonNetwork.MasterClient.GetNext());
                 }
                 else
                 {
-                    photonView.RPC("RPC_CheckTurn", RpcTarget.All);        
+                    photonView.RPC("RPC_CheckTurn", RpcTarget.All);
                 }
             }
         }
@@ -1013,7 +1013,7 @@ namespace BEKStudio
             string p1 = NormalizeIdPart(PhotonNetwork.LocalPlayer.NickName);
             string p2 = NormalizeIdPart(PhotonController.Instance.demoPlayer.name);
             rn = NormalizeIdPart(rn);
-            
+
             int secondsOfDay = (int)(PhotonNetwork.Time % 86400);
             int hh = secondsOfDay / 3600;
             int mm = secondsOfDay % 3600 / 60;
@@ -1128,7 +1128,7 @@ namespace BEKStudio
             {
                 lossCount = (int)val;
             }
-            Debug.Log("before increment: "+ lossCount);
+            Debug.Log("before increment: " + lossCount);
             ExitGames.Client.Photon.Hashtable props = new ExitGames.Client.Photon.Hashtable();
             props["BetCount"] = lossCount + 1;
             PhotonNetwork.CurrentRoom.SetCustomProperties(props);
@@ -1361,7 +1361,8 @@ namespace BEKStudio
                 {
                     LeanTween.move(statusPanel, new Vector2(940, statusPanel.anchoredPosition.y), 0.3f).setDelay(1f)
                         .setEase(LeanTweenType.easeInBack).setOnComplete(
-                            () => {
+                            () =>
+                            {
                                 statusScreen.SetActive(false);
                                 startImg.SetActive(false);
                             });
@@ -1370,7 +1371,10 @@ namespace BEKStudio
 
         void Update()
         {
-            // Debug.Log($"Linear Damping {PlayerPuck.Instance.rb.linearDamping}");
+            if (PhotonController.Instance != null && PhotonController.Instance.demoPlayer != null)
+            {
+                Debug.Log($"isWinning {PhotonController.Instance.demoPlayer.isWinning}");
+            }
             if (isSliding && Time.time - lastValueChangeTime > 0.1f)
             {
                 isSliding = false;
@@ -1534,9 +1538,9 @@ namespace BEKStudio
             if (!playerPhotonView.IsMine || gameState != GameState.READY) return;
             CircleCollider2D.isTrigger = true;
 
-            if(!PhotonController.Instance.offlineMatch)
+            if (!PhotonController.Instance.offlineMatch)
             {
-                if(PhotonNetwork.LocalPlayer.ActorNumber != 1)
+                if (PhotonNetwork.LocalPlayer.ActorNumber != 1)
                 {
                     playerPuck.transform.localPosition = new Vector2(
                     Mathf.Lerp(playerPuckMaxX, playerPuckMinX, playerSlider.value),
@@ -1558,7 +1562,7 @@ namespace BEKStudio
                 playerPuck.transform.localPosition.y
                 );
             }
-            
+
 
             if (!isSliding)
             {
@@ -1641,7 +1645,7 @@ namespace BEKStudio
             if (redPuck == null) return;
 
             if (!PhotonController.Instance.offlineMatch)
-            {    
+            {
                 var pv = redPuck.GetComponent<PhotonView>();
                 if (pv != null)
                 {
@@ -1867,17 +1871,17 @@ namespace BEKStudio
             // Prevent pocketing during turn-change period
             if (!allowPocketing) return;
 
-            foreach(GameObject puck in homePucksCollected)
+            foreach (GameObject puck in homePucksCollected)
             {
-                if(puck.name == puckName)
+                if (puck.name == puckName)
                 {
                     return;
                 }
             }
 
-            foreach(GameObject puck in awayPucksCollected)
+            foreach (GameObject puck in awayPucksCollected)
             {
-                if(puck.name == puckName)
+                if (puck.name == puckName)
                 {
                     return;
                 }
@@ -1901,17 +1905,17 @@ namespace BEKStudio
 
 
             Debug.Log("---------------HOME------------------");
-            foreach(GameObject puck in homePucksCollected)
+            foreach (GameObject puck in homePucksCollected)
             {
                 Debug.Log($"Pocketed: {puck.name}");
             }
             Debug.Log("---------------AWAY------------------");
-            foreach(GameObject puck in awayPucksCollected)
+            foreach (GameObject puck in awayPucksCollected)
             {
                 Debug.Log($"Pocketed: {puck.name}");
             }
             Debug.Log("---------------NOW------------------");
-            foreach(GameObject puck in pucksCollected)
+            foreach (GameObject puck in pucksCollected)
             {
                 Debug.Log($"Pocketed: {puck.name}");
             }
@@ -1946,7 +1950,7 @@ namespace BEKStudio
         {
             if (winnerAnnounced) return;
 
-            if(!AllLoaded() && !PhotonController.Instance.offlineMatch)
+            if (!AllLoaded() && !PhotonController.Instance.offlineMatch)
             {
                 return;
             }
@@ -1963,13 +1967,13 @@ namespace BEKStudio
             Debug.Log($"[{targetTag}] awayPucksCollected: {awayPucksCollected.Count}");
             Debug.Log($"═══════════════════════════════════════");
 
-            turnCount ++;
+            turnCount++;
 
             if (PhotonController.Instance.offlineMatch)
             {
                 PlayerPuck.Instance.isShotDone = true;
                 PlayerPuck.Instance.selectedShot = null;
-                // PlayerPuck.Instance.SetRepelMode(false);
+                PlayerPuck.Instance.SetRepelMode(false);
                 WhitePuckDamping(false);
                 PlayerPuck.Instance.collider.radius = 0.55f;
                 Time.timeScale = 1f;
@@ -1977,7 +1981,7 @@ namespace BEKStudio
 
             isTurnHardRestarting = false;
 
-            if(pucksCollected.Contains(playerPuck.gameObject))
+            if (pucksCollected.Contains(playerPuck.gameObject))
             {
                 CheckPlayerPenalty();
             }
@@ -2087,7 +2091,7 @@ namespace BEKStudio
                     }
 
 
-                   if (whichPlayer == WhichPlayer.OTHER)
+                    if (whichPlayer == WhichPlayer.OTHER)
                     {
                         if (PhotonController.Instance.offlineMatch)
                         {
@@ -2877,7 +2881,7 @@ namespace BEKStudio
             {
                 if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("playerMissing", out object val))
                 {
-                    if(val == null)
+                    if (val == null)
                     {
                         HideWaitingForOpponent();
                         isWaitingForReconnection = false;
@@ -2893,7 +2897,7 @@ namespace BEKStudio
             if (PhotonNetwork.PlayerList.Length == 1)
             {
                 int lossCount = 0;
-                if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("BetCount", out object val))          
+                if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("BetCount", out object val))
                 {
                     lossCount = (int)val;
                 }
@@ -3110,7 +3114,7 @@ namespace BEKStudio
 
         IEnumerator CheckInternetCoroutine()
         {
-            if(gameState == GameState.WIN || gameState == GameState.LOSE)
+            if (gameState == GameState.WIN || gameState == GameState.LOSE)
             {
                 yield break;
             }
@@ -3131,7 +3135,7 @@ namespace BEKStudio
                         reconnectingPanel.SetActive(false);
                         Time.timeScale = 1f;
                         ShowDiskAndPucks();
-                        if(whichPlayer == WhichPlayer.ME)
+                        if (whichPlayer == WhichPlayer.ME)
                         {
                             StartCoroutine(SwitchMasterDelay(0f));
                         }
@@ -3139,7 +3143,7 @@ namespace BEKStudio
                         {
                             CheckTurn();
                         }
-                        if(offlineReconnectFlow != null)
+                        if (offlineReconnectFlow != null)
                         {
                             StopCoroutine(offlineReconnectFlow);
                             offlineReconnectFlow = null;
@@ -3167,11 +3171,11 @@ namespace BEKStudio
             {
                 return;
             }
-            blinkCount ++;
-            if(blinkCount >= MaxBlinkCount)
+            blinkCount++;
+            if (blinkCount >= MaxBlinkCount)
             {
                 blinked = true;
-                PhotonController.Instance.demoPlayer.isWinning = false;
+                // PhotonController.Instance.demoPlayer.isWinning = false;
                 StartCoroutine(BlinkCoroutine());
             }
         }
@@ -3206,15 +3210,15 @@ namespace BEKStudio
 
         public void WhitePuckDamping(bool yes)
         {
-            foreach(Puck puck in allPucks)
+            foreach (Puck puck in allPucks)
             {
                 if (puck.gameObject.CompareTag("White") && !puck.isPocketed)
                 {
-                    puck.gameObject.GetComponent<Rigidbody2D>().linearDamping = yes? 5f : 2f;
+                    puck.gameObject.GetComponent<Rigidbody2D>().linearDamping = yes ? 5f : 2f;
                 }
             }
         }
     }
 
-    
+
 }
