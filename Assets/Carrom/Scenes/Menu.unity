@@ -10169,7 +10169,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 416387981}
         m_TargetAssemblyTypeName: BEKStudio.MenuController, Assembly-CSharp
-        m_MethodName: RefreshScene
+        m_MethodName: ReloadScene
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

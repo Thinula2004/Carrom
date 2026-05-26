@@ -78,6 +78,7 @@ namespace BEKStudio
 
         public void Start()
         {
+            Debug.Log("P: Starting");
             PhotonNetwork.KeepAliveInBackground = 60;
             lastSuccessfulPingTime = Time.time; // ✅ Initialize
             if (!PhotonNetwork.IsConnectedAndReady)

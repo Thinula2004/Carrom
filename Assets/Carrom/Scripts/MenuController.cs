@@ -221,22 +221,254 @@ namespace BEKStudio
 
         public void ReloadScene()
         {
+            StartCoroutine(ReloadAfterDisconnect());
+        }
+
+        private IEnumerator ReloadAfterDisconnect()
+        {
+            if (PhotonNetwork.IsConnected)
+            {
+                PhotonNetwork.Disconnect();
+
+                while (PhotonNetwork.IsConnected ||
+                       PhotonNetwork.NetworkClientState !=
+                       Photon.Realtime.ClientState.Disconnected)
+                {
+                    yield return null;
+                }
+            }
+
+            // Destroy(PhotonController.Instance);
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
         public void RefreshScene()
         {
-#if UNITY_WEBGL && !UNITY_EDITOR
-            WebBrowserBridge.Instance.ReloadCurrentPage();
-#else
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-#endif
         }
 
         public void CloseErrorPanels()
         {
             coinErrorPanel.SetActive(false);
             friendCodeErrorPanel.SetActive(false);
+        }
+
+        private IEnumerator LoadingProcess()
+        {
+            bool photonReady = false;
+            bool userDataReady = false;
+            bool versionReady = false;
+            bool versionIsSame = false;
+
+            float maxLoadingTime = 25f;
+            float timer = 0f;
+
+            loadingBar.value = 0f;
+
+            if (!PhotonNetwork.IsConnectedAndReady)
+            {
+                PhotonNetwork.ConnectUsingSettings();
+            }
+
+            StartCoroutine(WaitForPhotonConnection(() => photonReady = true));
+            StartCoroutine(WaitForUserData(() => userDataReady = true));
+
+            StartCoroutine(VersionChecker.CheckVersion(isSame =>
+            {
+                versionIsSame = isSame;
+                versionReady = true;
+            }));
+
+            while (!photonReady || !userDataReady || !versionReady)
+            {
+                timer += Time.deltaTime;
+
+                if (timer >= maxLoadingTime)
+                {
+                    Debug.Log("Loading timeout - Connection failed");
+
+                    string msg = "No Connection! Please check your internet and try again.";
+                    CheckConnection(msg);
+
+                    LoadingScreen.SetActive(false);
+                    yield break;
+                }
+
+                Debug.Log($"P: Photon : {photonReady}, UserData : {userDataReady}, Version : {versionReady}");
+                Debug.Log($"P: PhotonNetwork.IsConnectedAndReady : {PhotonNetwork.IsConnectedAndReady}, Server: {PhotonNetwork.Server} ");
+
+                float progress = 0f;
+
+                if (photonReady)
+                    progress += 0.33f;
+
+                if (userDataReady)
+                    progress += 0.33f;
+
+                if (versionReady)
+                    progress += 0.34f;
+
+                loadingBar.value = progress;
+
+                yield return null;
+            }
+
+            loadingBar.value = 1f;
+
+            LoadingScreen.SetActive(false);
+
+            if (!versionIsSame)
+            {
+                versionIssuePanel.SetActive(true);
+            }
+
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.StopRollingSound();
+        }
+
+        private IEnumerator WaitForPhotonConnection(System.Action onComplete)
+        {
+            while (!PhotonNetwork.IsConnectedAndReady ||
+                PhotonNetwork.Server != Photon.Realtime.ServerConnection.MasterServer)
+            {
+                yield return null;
+            }
+
+            Debug.Log("Photon ready - Connected to Master Server");
+            onComplete?.Invoke();
+
+        }
+
+        // Centralized method to handle 401 redirects
+        private void Handle401Unauthorized()
+        {
+            Debug.LogWarning("[APIManager] 401 Unauthorized - Redirecting to login page");
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+                Application.ExternalEval("window.location.replace('https://playport.lk');");
+#else
+            Application.OpenURL("https://playport.lk");
+#endif
+        }
+
+        public void GoWallet()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+                Application.ExternalEval("window.location.replace('https://playport.lk');");
+#else
+            Application.OpenURL("https://playport.lk");
+#endif
+        }
+
+        // Helper method to check response code
+        private bool CheckForUnauthorized(UnityWebRequest request)
+        {
+            if (request.responseCode == 401)
+            {
+                Handle401Unauthorized();
+                return true;
+            }
+            return false;
+        }
+
+        public IEnumerator LoadProfileImage(string imageUrl)
+        {
+            if (string.IsNullOrEmpty(imageUrl))
+            {
+                Debug.Log("Profile image URL is empty");
+                yield break;
+            }
+
+            Debug.Log("Loading profile image from: " + imageUrl);
+
+            using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(imageUrl))
+            {
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.ConnectionError ||
+                    request.result == UnityWebRequest.Result.ProtocolError)
+                {
+                    Debug.LogError("Error loading profile image: " + request.error);
+                    profileImg.sprite = sampleProfile;
+                    PlayerImg.sprite = sampleProfile;
+                }
+                else
+                {
+                    // Get the texture from the request
+                    Texture2D texture = DownloadHandlerTexture.GetContent(request);
+
+                    // Create a sprite from the texture
+                    Sprite sprite = Sprite.Create(
+                        texture,
+                        new Rect(0, 0, texture.width, texture.height),
+                        new Vector2(0.5f, 0.5f)
+                    );
+
+                    // Assign to the Image component
+                    profileImg.sprite = sprite;
+                    PlayerImg.sprite = sprite;
+
+                    Debug.Log("Profile image loaded successfully");
+                }
+            }
+        }
+
+        public IEnumerator LoadOpponentImage(string imageUrl)
+        {
+            if (string.IsNullOrEmpty(imageUrl))
+            {
+                Debug.LogWarning("[OpponentImage] URL is empty.");
+                OpponentImg.sprite = sampleProfile;
+                yield break;
+            }
+
+            using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(imageUrl))
+            {
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.ConnectionError ||
+                    request.result == UnityWebRequest.Result.ProtocolError)
+                {
+                    Debug.LogError($"[OpponentImage] Error loading opponent image: {request.error}");
+                    OpponentImg.sprite = sampleProfile;
+                    yield break;
+                }
+
+                Texture2D texture = DownloadHandlerTexture.GetContent(request);
+                Sprite sprite = Sprite.Create(texture,
+                    new Rect(0, 0, texture.width, texture.height),
+                    new Vector2(0.5f, 0.5f));
+
+                if (OpponentImg)
+                {
+                    OpponentImg.sprite = sprite;
+                    Debug.Log("[OpponentImage] Opponent image loaded successfully.");
+                }
+            }
+        }
+
+        private IEnumerator WaitForUserData(System.Action onComplete)
+        {
+            // Start fetching user profile
+            yield return StartCoroutine(GetUserProfileCoroutine());
+
+            // Ensure UMdata is set (fallback to default if API fails)
+            if (UMdata == null || string.IsNullOrEmpty(UMdata.username))
+            {
+                UMdata = userDatas; // Use your fallback data
+                if (string.IsNullOrEmpty(UMdata.username))
+                {
+                    UMdata.username = "Guest"; // Final fallback
+                }
+            }
+
+            onComplete?.Invoke();
+        }
+
+        public void GetUserProfile()
+        {
+            Debug.Log("Fetching user profile...");
+            StartCoroutine(GetUserProfileCoroutine());
         }
 
         public void OpenFriendsPanel()
@@ -474,216 +706,6 @@ namespace BEKStudio
         public void OnJoinFriendRoomFailed()
         {
             friendRoomClosedPanel.SetActive(true);
-        }
-
-        private IEnumerator LoadingProcess()
-        {
-            bool photonReady = false;
-            bool userDataReady = false;
-            bool versionReady = false;
-            bool versionIsSame = false;
-
-            float maxLoadingTime = 25f;
-            float timer = 0f;
-
-            loadingBar.value = 0f;
-
-            StartCoroutine(WaitForPhotonConnection(() => photonReady = true));
-            StartCoroutine(WaitForUserData(() => userDataReady = true));
-
-            StartCoroutine(VersionChecker.CheckVersion(isSame =>
-            {
-                versionIsSame = isSame;
-                versionReady = true;
-            }));
-
-            while (!photonReady || !userDataReady || !versionReady)
-            {
-                timer += Time.deltaTime;
-
-                if (timer >= maxLoadingTime)
-                {
-                    Debug.Log("Loading timeout - Connection failed");
-
-                    string msg = "No Connection! Please check your internet and try again.";
-                    CheckConnection(msg);
-
-                    LoadingScreen.SetActive(false);
-                    yield break;
-                }
-
-                float progress = 0f;
-
-                if (photonReady)
-                    progress += 0.33f;
-
-                if (userDataReady)
-                    progress += 0.33f;
-
-                if (versionReady)
-                    progress += 0.34f;
-
-                loadingBar.value = progress;
-
-                yield return null;
-            }
-
-            loadingBar.value = 1f;
-
-            LoadingScreen.SetActive(false);
-
-            if (!versionIsSame)
-            {
-                versionIssuePanel.SetActive(true);
-            }
-
-            if (AudioManager.Instance != null)
-                AudioManager.Instance.StopRollingSound();
-        }
-
-        private IEnumerator WaitForPhotonConnection(System.Action onComplete)
-        {
-            while (!PhotonNetwork.IsConnectedAndReady ||
-                PhotonNetwork.Server != Photon.Realtime.ServerConnection.MasterServer)
-            {
-                yield return null;
-            }
-
-            Debug.Log("Photon ready - Connected to Master Server");
-            onComplete?.Invoke();
-
-        }
-
-        // Centralized method to handle 401 redirects
-        private void Handle401Unauthorized()
-        {
-            Debug.LogWarning("[APIManager] 401 Unauthorized - Redirecting to login page");
-
-#if UNITY_WEBGL && !UNITY_EDITOR
-                Application.ExternalEval("window.location.replace('https://playport.lk');");
-#else
-            Application.OpenURL("https://playport.lk");
-#endif
-        }
-
-        public void GoWallet()
-        {
-#if UNITY_WEBGL && !UNITY_EDITOR
-                Application.ExternalEval("window.location.replace('https://playport.lk');");
-#else
-            Application.OpenURL("https://playport.lk");
-#endif
-        }
-
-        // Helper method to check response code
-        private bool CheckForUnauthorized(UnityWebRequest request)
-        {
-            if (request.responseCode == 401)
-            {
-                Handle401Unauthorized();
-                return true;
-            }
-            return false;
-        }
-
-        public IEnumerator LoadProfileImage(string imageUrl)
-        {
-            if (string.IsNullOrEmpty(imageUrl))
-            {
-                Debug.Log("Profile image URL is empty");
-                yield break;
-            }
-
-            Debug.Log("Loading profile image from: " + imageUrl);
-
-            using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(imageUrl))
-            {
-                yield return request.SendWebRequest();
-
-                if (request.result == UnityWebRequest.Result.ConnectionError ||
-                    request.result == UnityWebRequest.Result.ProtocolError)
-                {
-                    Debug.LogError("Error loading profile image: " + request.error);
-                    profileImg.sprite = sampleProfile;
-                    PlayerImg.sprite = sampleProfile;
-                }
-                else
-                {
-                    // Get the texture from the request
-                    Texture2D texture = DownloadHandlerTexture.GetContent(request);
-
-                    // Create a sprite from the texture
-                    Sprite sprite = Sprite.Create(
-                        texture,
-                        new Rect(0, 0, texture.width, texture.height),
-                        new Vector2(0.5f, 0.5f)
-                    );
-
-                    // Assign to the Image component
-                    profileImg.sprite = sprite;
-                    PlayerImg.sprite = sprite;
-
-                    Debug.Log("Profile image loaded successfully");
-                }
-            }
-        }
-
-        public IEnumerator LoadOpponentImage(string imageUrl)
-        {
-            if (string.IsNullOrEmpty(imageUrl))
-            {
-                Debug.LogWarning("[OpponentImage] URL is empty.");
-                OpponentImg.sprite = sampleProfile;
-                yield break;
-            }
-
-            using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(imageUrl))
-            {
-                yield return request.SendWebRequest();
-
-                if (request.result == UnityWebRequest.Result.ConnectionError ||
-                    request.result == UnityWebRequest.Result.ProtocolError)
-                {
-                    Debug.LogError($"[OpponentImage] Error loading opponent image: {request.error}");
-                    OpponentImg.sprite = sampleProfile;
-                    yield break;
-                }
-
-                Texture2D texture = DownloadHandlerTexture.GetContent(request);
-                Sprite sprite = Sprite.Create(texture,
-                    new Rect(0, 0, texture.width, texture.height),
-                    new Vector2(0.5f, 0.5f));
-
-                if (OpponentImg)
-                {
-                    OpponentImg.sprite = sprite;
-                    Debug.Log("[OpponentImage] Opponent image loaded successfully.");
-                }
-            }
-        }
-
-        private IEnumerator WaitForUserData(System.Action onComplete)
-        {
-            // Start fetching user profile
-            yield return StartCoroutine(GetUserProfileCoroutine());
-
-            // Ensure UMdata is set (fallback to default if API fails)
-            if (UMdata == null || string.IsNullOrEmpty(UMdata.username))
-            {
-                UMdata = userDatas; // Use your fallback data
-                if (string.IsNullOrEmpty(UMdata.username))
-                {
-                    UMdata.username = "Guest"; // Final fallback
-                }
-            }
-
-            onComplete?.Invoke();
-        }
-
-        public void GetUserProfile()
-        {
-            Debug.Log("Fetching user profile...");
-            StartCoroutine(GetUserProfileCoroutine());
         }
 
         //API calling
