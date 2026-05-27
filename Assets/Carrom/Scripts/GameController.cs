@@ -192,16 +192,20 @@ namespace BEKStudio
         public GameObject backgroundWarningPanel;
         public TMP_Text backgroundChancesTxt;
         private int backgroundChances;
+        private float unfocusTime;
         public int blinkCount;
         public GameObject blinker;
         bool blinked;
         const int MaxBlinkCount = 3;
 
+        public GameObject backgroundLoosePanel;
+
         void Awake()
         {
             //PhotonNetwork.SendRate = 30;
             PhotonNetwork.SerializationRate = 25;
-
+            unfocusTime = 0;
+            backgroundLoosePanel.SetActive(false);
             NamePanelGameWin.SetActive(false);
             WinBetAnim.SetActive(false);
             HomeBtn.SetActive(false);
@@ -225,6 +229,11 @@ namespace BEKStudio
 
         void Start()
         {
+            if (PhotonController.Instance != null)
+            {
+                PhotonController.Instance.isIntentionalLeave = false;
+                PhotonController.Instance.waitForReconnectionCoroutine = null;
+            }
             blinkCount = 0;
             blinked = false;
             blinker.SetActive(false);
@@ -475,7 +484,7 @@ namespace BEKStudio
                 float timeSinceLastPing = Time.time - PhotonController.Instance.lastSuccessfulPingTime;
 
                 // ✅ Use PhotonController.LocalDisconnectThreshold (it's a const, access via class name)
-                if (timeSinceLastPing > PhotonController.LocalDisconnectThreshold)
+                if (timeSinceLastPing > PhotonController.LocalDisconnectThreshold && !PhotonController.Instance.isIntentionalLeave)
                 {
                     if (!PhotonController.Instance.localDisconnectHandled)
                     {
@@ -516,13 +525,14 @@ namespace BEKStudio
                     Debug.Log("Player switched tab.");
                     isPlayerOnTheTab = false;
                     backgroundChances -= 1;
+                    unfocusTime = Time.realtimeSinceStartup;
                 }
                 else
                 {
                     Debug.Log("Player returned");
-                    if (backgroundChances <= 0)
+                    if (backgroundChances <= 0 || (unfocusTime != 0 && Time.realtimeSinceStartup - unfocusTime > 15f))
                     {
-                        ShowDisconnectLose();
+                        ShowBackgroundLose();
                         return;
                     }
                     if (isPlayerOnTheTab == false)
@@ -620,6 +630,21 @@ namespace BEKStudio
         public void EnableTouchDelay()
         {
             PlayerPuck.Instance.EnableTouchControls();
+        }
+
+        public void ShowBackgroundLose()
+        {
+            gameState = GameState.LOSE;
+            reduceTimer = false;
+            allowPocketing = false;
+            AudioManager.Instance.StopTimeoutSound();
+
+            backgroundLoosePanel.SetActive(true);
+            PhotonController.Instance.MarkIntentionalLeave();
+            if (PhotonNetwork.InRoom)
+            {
+                PhotonNetwork.LeaveRoom();
+            }
         }
 
         public void ShowDisconnectLose()
@@ -2894,7 +2919,7 @@ namespace BEKStudio
                 yield return new WaitForSeconds(1f);
                 waitTime += 1f;
             }
-            if (PhotonNetwork.PlayerList.Length == 1)
+            if (waitingForOpponentText.activeInHierarchy)
             {
                 int lossCount = 0;
                 if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue("BetCount", out object val))

@@ -29,7 +29,7 @@ namespace BEKStudio
         public string botName;
 
         private bool hasJoinedRoom;
-        private bool isIntentionalLeave = false;
+        public bool isIntentionalLeave = false;
 
         // NEW: short reconnect grace loop
         private bool reconnecting = false;
@@ -66,6 +66,7 @@ namespace BEKStudio
         private bool intentionallyLeft = false;
         private bool isCreatingRoom = false;
         bool isFriendRoomFlow = false;
+        public Coroutine waitForReconnectionCoroutine = null;
 
         void Awake()
         {
@@ -79,6 +80,7 @@ namespace BEKStudio
         public void Start()
         {
             Debug.Log("P: Starting");
+            isIntentionalLeave = false;
             PhotonNetwork.KeepAliveInBackground = 60;
             lastSuccessfulPingTime = Time.time; // ✅ Initialize
             if (!PhotonNetwork.IsConnectedAndReady)
@@ -556,7 +558,7 @@ namespace BEKStudio
 
         public override void OnLeftRoom()
         {
-            if (offlineMatch || intentionallyLeft)
+            if (offlineMatch || intentionallyLeft || isIntentionalLeave)
             {
                 intentionallyLeft = false;
                 return;
@@ -636,7 +638,12 @@ namespace BEKStudio
                         {
                             GameController.Instance.isWaitingForReconnection = true;
                             GameController.Instance.ShowWaitingForOpponent();
-                            StartCoroutine(GameController.Instance.WaitForReconnection());
+                            if (waitForReconnectionCoroutine != null)
+                            {
+                                StopCoroutine(waitForReconnectionCoroutine);
+                                waitForReconnectionCoroutine = null;
+                            }
+                            waitForReconnectionCoroutine = StartCoroutine(GameController.Instance.WaitForReconnection());
                         }
                     }
                 }
@@ -645,6 +652,11 @@ namespace BEKStudio
                     GameController.Instance.allowPocketing = true;
                     GameController.Instance.reduceTimer = true;
                     GameController.Instance.HideWaitingForOpponent();
+                    if (waitForReconnectionCoroutine != null)
+                    {
+                        StopCoroutine(waitForReconnectionCoroutine);
+                        waitForReconnectionCoroutine = null;
+                    }
                     GameController.Instance.isWaitingForReconnection = false;
                 }
             }
@@ -742,11 +754,11 @@ namespace BEKStudio
             }
 
             // ignore intentional leave
-            if (isIntentionalLeave)
-            {
-                isIntentionalLeave = false;
-                return;
-            }
+            // if (isIntentionalLeave)
+            // {
+            //     isIntentionalLeave = false;
+            //     return;
+            // }
 
             // Only run in Game scene
             if (SceneManager.GetActiveScene().name != "Game123")
