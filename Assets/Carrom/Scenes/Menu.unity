@@ -3989,7 +3989,7 @@ MonoBehaviour:
   friendAmountTxt: {fileID: 342929413}
   friendCodeErrorPanel: {fileID: 1034647371}
   friendRoomClosedPanel: {fileID: 564616817}
-  user_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4NGE3YTQ5Mi1lMTdmLTQ4ZjUtYTkyZC0zZjc3MmJiMzg0ZmMiLCJyb2xlIjoidXNlciIsInNlc3Npb25JZCI6IjUxMTExYzIzYjc1NzkxZjBlZDA2ZTAwOTdiNzMxODk3IiwiaWF0IjoxNzc5NDIyNzkwfQ.NxPI4Fj6Z-TD9vTTEslZVUmInJ-qEhoM72t5OKCSbq4
+  user_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4NGE3YTQ5Mi1lMTdmLTQ4ZjUtYTkyZC0zZjc3MmJiMzg0ZmMiLCJyb2xlIjoidXNlciIsInNlc3Npb25JZCI6Ijg4ZTQ5ZjZlYWExM2RmZTg4Nzc5NTM5YWNiOWFhNGI1IiwiaWF0IjoxNzgyNDY0ODY5fQ.2AgzvM8qBsApWN_kJHNAJNowOOpxetPe0KRN0Invf40
 --- !u!4 &416387982
 Transform:
   m_ObjectHideFlags: 0

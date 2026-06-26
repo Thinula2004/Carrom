@@ -1396,10 +1396,6 @@ namespace BEKStudio
 
         void Update()
         {
-            if (PhotonController.Instance != null && PhotonController.Instance.demoPlayer != null)
-            {
-                Debug.Log($"isWinning {PhotonController.Instance.demoPlayer.isWinning}");
-            }
             if (isSliding && Time.time - lastValueChangeTime > 0.1f)
             {
                 isSliding = false;

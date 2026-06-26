@@ -194,6 +194,13 @@ namespace BEKStudio
                 return;
             }
 
+            if (isBotActivated && whichRoom == "galle" && MenuController.Instance.UMdata != null && !string.IsNullOrEmpty(MenuController.Instance.UMdata.player_rank) && MenuController.Instance.UMdata.player_rank == "platinum")
+            {
+                MenuController.Instance.VsJoinedRoom();
+                StartCoroutine(FreshUserOfflineMatchCoroutine(false));
+                return;
+            }
+
             // MenuController.Instance.VsJoinedRoom();
             // if (isBotActivated)
             // {
@@ -243,10 +250,10 @@ namespace BEKStudio
             joinTimeoutCoroutine = StartCoroutine(JoinRoomTimeout());
 
             Debug.Log($"Is it on {isBotActivated}");
-            if (isBotActivated)
-            {
-                StartCoroutine(OfflineMatchCoroutine());
-            }
+            // if (isBotActivated)
+            // {
+            //     StartCoroutine(OfflineMatchCoroutine());
+            // }
         }
 
         public void FriendFindRoom(string roomCode)

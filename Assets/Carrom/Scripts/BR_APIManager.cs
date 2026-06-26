@@ -602,6 +602,7 @@ public class BR_APIManager : MonoBehaviour
             BotStateResponse response = JsonConvert.DeserializeObject<BotStateResponse>(json);
             Debug.Log("Bot State Success. Response: " + json);
 
+            // response.data.is_carrom_bot_activated = true;
 
             PhotonController.Instance.FindRoom(
                 response.data
