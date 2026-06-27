@@ -194,10 +194,26 @@ namespace BEKStudio
                 return;
             }
 
-            if (isBotActivated && whichRoom == "galle" && MenuController.Instance.UMdata != null && !string.IsNullOrEmpty(MenuController.Instance.UMdata.player_rank) && MenuController.Instance.UMdata.player_rank == "platinum")
+            if (MenuController.Instance.UMdata != null && !string.IsNullOrEmpty(MenuController.Instance.UMdata.player_rank) && MenuController.Instance.UMdata.player_rank == "platinum")
             {
+
+                string rank = "platinum";
+                ExitGames.Client.Photon.Hashtable roomHash = new ExitGames.Client.Photon.Hashtable {
+                    { "gameId", GAME_ID },
+                    { "playerRank", rank },
+                    { "roomType", whichRoom },
+                    { "isPrivateRoom", false }
+                };
+
+                isFriendRoomFlow = false;
+
                 MenuController.Instance.VsJoinedRoom();
-                StartCoroutine(FreshUserOfflineMatchCoroutine(false));
+                PhotonNetwork.JoinRandomRoom(roomHash, (byte)2);
+                MenuController.Instance.VsJoinedRoom();
+                if (isBotActivated)
+                {
+                    StartCoroutine(OfflineMatchCoroutine());
+                }
                 return;
             }
 
@@ -219,22 +235,23 @@ namespace BEKStudio
             // }
 
             string playerRank = "bronze";
-            if (MenuController.Instance.UMdata != null && !string.IsNullOrEmpty(MenuController.Instance.UMdata.player_rank))
-            {
-                if (MenuController.Instance.UMdata.player_rank == "bronze" || MenuController.Instance.UMdata.player_rank == "silver" || MenuController.Instance.UMdata.player_rank == "gold")
-                {
-                    playerRank = "bronze";
-                }
-                else
-                {
-                    isBotActivated = false;
-                    playerRank = "platinum";
-                }
-                //playerRank = MenuManager.Instance.UMdata.player_rank.ToLower();
-            }
+            // if (MenuController.Instance.UMdata != null && !string.IsNullOrEmpty(MenuController.Instance.UMdata.player_rank))
+            // {
+            //     if (MenuController.Instance.UMdata.player_rank == "bronze" || MenuController.Instance.UMdata.player_rank == "silver" || MenuController.Instance.UMdata.player_rank == "gold")
+            //     {
+            //         playerRank = "bronze";
+            //     }
+            //     else
+            //     {
+            //         isBotActivated = false;
+            //         playerRank = "other";
+            //     }
+            //     //playerRank = MenuManager.Instance.UMdata.player_rank.ToLower();
+            // }
 
             ExitGames.Client.Photon.Hashtable roomHastable = new ExitGames.Client.Photon.Hashtable {
                 { "gameId", GAME_ID },
+                { "playerRank", playerRank },
                 { "roomType", whichRoom },
                 { "isPrivateRoom", false }
             };
@@ -403,6 +420,7 @@ namespace BEKStudio
 
         public override void OnJoinRandomFailed(short returnCode, string message)
         {
+            Debug.Log("P: Join Random Failed");
 
             if (isFriendRoomFlow)
             {
@@ -412,7 +430,7 @@ namespace BEKStudio
                 return;
             }
 
-            if (matchmakingResolved) return; // ← Photon firing this after we already handled it
+            if (matchmakingResolved) return;
 
             matchmakingResolved = true;
             isCreatingRoom = true;
@@ -426,29 +444,45 @@ namespace BEKStudio
             string playerRank = "bronze";
             if (MenuController.Instance.UMdata != null && !string.IsNullOrEmpty(MenuController.Instance.UMdata.player_rank))
             {
-
-                if (MenuController.Instance.UMdata.player_rank == "bronze" || MenuController.Instance.UMdata.player_rank == "silver" || MenuController.Instance.UMdata.player_rank == "gold")
+                if (MenuController.Instance.UMdata.player_rank == "platinum")
                 {
-                    playerRank = "bronze";
+                    playerRank = "platinum";
                 }
                 else
                 {
-                    playerRank = "platinam";
+                    playerRank = "bronze";
                 }
-                //playerRank = MenuManager.Instance.UMdata.player_rank.ToLower();
+
+                // if (MenuController.Instance.UMdata.player_rank == "bronze" || MenuController.Instance.UMdata.player_rank == "silver" || MenuController.Instance.UMdata.player_rank == "gold")
+                // {
+                //     playerRank = "bronze";
+                // }
+                // else if (MenuController.Instance.UMdata.player_rank == "platinum")
+                // {
+                //     playerRank = "platinum";
+                // }
+                // else
+                // {
+                //     playerRank = "other";
+                // }
             }
 
+
+
+            Debug.Log("P: Platinum Room Created");
             ExitGames.Client.Photon.Hashtable roomHastable = new ExitGames.Client.Photon.Hashtable {
-            { "gameId", GAME_ID },
-            { "roomType", whichRoom },
-            { "isPrivateRoom", false }
-        };
+                    { "gameId", GAME_ID },
+                    { "playerRank", playerRank },
+                    { "roomType", whichRoom },
+                    { "isPrivateRoom", false }
+                };
 
             RoomOptions roomOptions = new RoomOptions();
             roomOptions.CustomRoomProperties = roomHastable;
             roomOptions.CustomRoomPropertiesForLobby = new string[]
             {
                 "gameId",
+                "playerRank",
                 "roomType",
                 "isPrivateRoom"
             };
@@ -457,11 +491,10 @@ namespace BEKStudio
             roomOptions.IsVisible = true;
             roomOptions.MaxPlayers = (byte)2;
 
-            // Keep PlayerTtl for match rooms (grace to rejoin after brief drops)
-            roomOptions.PlayerTtl = 15000;  // 30s
+            roomOptions.PlayerTtl = 15000;
             roomOptions.EmptyRoomTtl = 0;
-            Debug.Log("PR " + playerRank);
             PhotonNetwork.CreateRoom(null, roomOptions);
+
         }
 
         public override void OnJoinRoomFailed(short returnCode, string message)
